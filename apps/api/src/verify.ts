@@ -279,6 +279,12 @@ export function verifySimulated(req: VerifyRequest, data: DemoData): VerifyRespo
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
+function validCalendarDate(value: string | null | undefined): string | null {
+  if (!value || !ISO_DATE.test(value) || value.startsWith('0000-')) return null;
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value ? value : null;
+}
+
 /** Ngày hôm nay theo giờ Việt Nam, dạng YYYY-MM-DD. */
 export function todayVn(now: Date = new Date()): string {
   return now.toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' });
@@ -291,8 +297,8 @@ export function evaluateJobLive(req: VerifyRequest, today: string): JobResult {
     company: req.confirmed.company,
     role: req.confirmed.role,
     jobCode: p.jobCode?.trim() || null,
-    postedOn: p.postedOn && ISO_DATE.test(p.postedOn) ? p.postedOn : null,
-    closesOn: p.closesOn && ISO_DATE.test(p.closesOn) ? p.closesOn : null,
+    postedOn: validCalendarDate(p.postedOn),
+    closesOn: validCalendarDate(p.closesOn),
     reason: null as string | null,
   };
   const source = { label: 'Thông tin do bạn nhập từ tin tuyển dụng', url: jobUrl, simulated: false };

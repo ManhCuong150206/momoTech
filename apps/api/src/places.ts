@@ -88,12 +88,22 @@ export function companyNameMatches(company: string, placeName: string | null): b
   return hit / a.length >= 0.75;
 }
 
-/** Địa chỉ trả về chứa phần lớn từ và số của địa chỉ hẹn (bỏ tầng, phòng). */
+function leadingHouseNumber(address: string): string | undefined {
+  return address.normalize('NFKC').trim().toLowerCase()
+    .match(/^(?:(?:số|so)\s+)?(\d+[a-z]?(?:\s*[/\-]\s*\d+[a-z]?)*)(?=\s|,|$)/u)?.[1]
+    ?.replace(/\s+/g, '');
+}
+
+/** Kiểm tra số nhà trước khi so độ trùng lặp của địa chỉ (bỏ tầng, phòng). */
 export function addressOverlaps(meeting: string, found: string | null): boolean {
+  if (!found) return false;
+  const meetingNumber = leadingHouseNumber(meeting);
+  if (meetingNumber && meetingNumber !== leadingHouseNumber(found)) return false;
+
   const want = fold(meeting.replace(/\b(tầng|lầu|phòng|tang|lau|phong)\s*\w+/giu, ' '))
     .split(' ')
     .filter((t) => t.length > 1 || /\d/.test(t));
-  if (want.length === 0 || !found) return false;
+  if (want.length === 0) return false;
   const have = new Set(fold(found).split(' '));
   const hit = want.filter((t) => have.has(t)).length;
   return hit / want.length >= 0.6;

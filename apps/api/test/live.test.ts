@@ -158,6 +158,17 @@ describe('VT08 đối chiếu địa điểm (Google Places)', () => {
     const ev = evaluatePlaces('Công ty TNHH Ánh Dương', ADDR, [hit('Ánh Dương', '25 Nguyễn Huệ, Quận 1, TP.HCM')]);
     expect(ev.status).toBe('matched');
   });
+
+  it('chưa xác nhận khi số nhà khác dù tên công ty và đường khớp', () => {
+    const ev = evaluatePlaces('Công ty TNHH Ánh Dương', ADDR, [hit('Ánh Dương', '99 Nguyễn Huệ, Quận 1, TP.HCM')]);
+    expect(ev.status).toBe('company_unconfirmed');
+  });
+
+  it('so cả phần chữ và phần sau dấu gạch chéo của số nhà', () => {
+    expect(addressOverlaps('Số 25A/1 Nguyễn Huệ, Quận 1', '25a/1 Nguyễn Huệ, Quận 1')).toBe(true);
+    expect(addressOverlaps('25A/1 Nguyễn Huệ, Quận 1', '25B/1 Nguyễn Huệ, Quận 1')).toBe(false);
+    expect(addressOverlaps('25A/1 Nguyễn Huệ, Quận 1', '25A/2 Nguyễn Huệ, Quận 1')).toBe(false);
+  });
   it('chưa xác nhận: công ty tồn tại nhưng ở địa chỉ khác (trụ sở hoặc chi nhánh khác)', () => {
     const ev = evaluatePlaces('Công ty TNHH Ánh Dương', ADDR, [hit('Ánh Dương', '70 Lê Lợi, Quận 3')]);
     expect(ev.status).toBe('company_unconfirmed');
@@ -210,6 +221,17 @@ describe('VT09 đối chiếu tin đăng từ dữ kiện người dùng nhập'
   });
   it('bỏ qua ngày sai định dạng thay vì kết luận', () => {
     expect(evaluateJobLive(base('https://x.vn', { closesOn: '30/09/2026' as never }), TODAY).status).toBe('unavailable');
+  });
+  it('bỏ cả ngày đăng và hạn nộp không tồn tại trên lịch', () => {
+    const j = evaluateJobLive(base('https://x.vn', { postedOn: '2026-02-29', closesOn: '2026-02-31' }), TODAY);
+    expect(j.status).toBe('unavailable');
+    expect(j.details.postedOn).toBeNull();
+    expect(j.details.closesOn).toBeNull();
+  });
+  it('giữ ngày 29/02 hợp lệ của năm nhuận', () => {
+    const j = evaluateJobLive(base(null, { postedOn: '2028-02-28', closesOn: '2028-02-29' }), '2028-02-29');
+    expect(j.status).toBe('open');
+    expect(j.details.closesOn).toBe('2028-02-29');
   });
   it('todayVn trả ngày theo giờ Việt Nam', () => {
     expect(todayVn(new Date('2026-11-20T18:00:00Z'))).toBe('2026-11-21');
