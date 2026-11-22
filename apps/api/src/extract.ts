@@ -3,36 +3,12 @@ import type {
   ExtractRequest,
   ExtractResponse,
   Requirement,
-  RequirementKind,
 } from '../../../shared/contract.js';
 import type { AiExtractor } from './ai.js';
 import { type DemoData, findCaseByJobUrl } from './demo-data.js';
+import { findRequirements } from './requirements.js';
 
-// Bộ trích mô phỏng (giai đoạn 1): luật + dữ kiện ca demo. Chưa gọi AI.
-// VT07 sẽ thay phần này bằng Bedrock nhưng giữ nguyên hình dạng ExtractResponse.
-
-const REQUIREMENT_PATTERNS: Array<{ kind: RequirementKind; re: RegExp }> = [
-  {
-    kind: 'fee_request',
-    re: /(?:đóng|nộp|chuyển)\s+(?:phí|tiền|khoản)[^.,;\n]*?(?=\s+trước|[.,;\n]|$)|phí giữ chỗ|đặt cọc/iu,
-  },
-  {
-    kind: 'document_request',
-    re: /(?:gửi|cung cấp|chụp|nộp)[^.,;\n]*?(?:CCCD|CMND|căn cước|hộ chiếu|giấy tờ)[^.,;\n]*/iu,
-  },
-  { kind: 'attendance_confirmation', re: /xác nhận[^.,;\n]*tham dự[^.,;\n]*/iu },
-  { kind: 'shared_office_meeting', re: /văn phòng dùng chung[^.,;\n]*/iu },
-  { kind: 'address_pending', re: /địa chỉ sẽ gửi sau/iu },
-];
-
-export function findRequirements(text: string): Requirement[] {
-  const found: Requirement[] = [];
-  for (const { kind, re } of REQUIREMENT_PATTERNS) {
-    const m = re.exec(text);
-    if (m) found.push({ kind, quote: m[0].trim() });
-  }
-  return found;
-}
+export { findRequirements } from './requirements.js';
 
 function textField(value: string | null | undefined, text: string): ExtractedField {
   if (!value) return { value: null, quote: null, origin: 'not_found' };
@@ -92,11 +68,11 @@ export async function extractLive(req: ExtractRequest, ai: AiExtractor | undefin
       if (out.company) company = { value: out.company, quote: out.company, origin: 'ai' };
       if (out.role) role = { value: out.role, quote: out.role, origin: 'ai' };
       aiAddress = out.meetingAddress;
-      const kinds = new Set(out.requirements.map((r) => r.kind));
-      requirements = [...out.requirements, ...rules.filter((r) => !kinds.has(r.kind))];
+      const ruleKinds = new Set(rules.map((r) => r.kind));
+      requirements = [...rules, ...out.requirements.filter((r) => !ruleKinds.has(r.kind))].slice(0, 10);
       notices.push('AI đã đọc lời mời. Hãy kiểm tra lại các dữ kiện trước khi đối chiếu.');
       if (out.dropped > 0) {
-        notices.push(`Đã bỏ ${out.dropped} mục AI trả về vì đoạn trích không có trong lời mời.`);
+        notices.push(`Đã bỏ ${out.dropped} mục AI trả về vì căn cứ thiếu hoặc nội dung không khớp với yêu cầu.`);
       }
     } catch {
       notices.push('Dịch vụ AI tạm lỗi nên chỉ dùng luật cố định. Hãy nhập tay công ty và vị trí.');

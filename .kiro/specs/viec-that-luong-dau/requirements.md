@@ -14,7 +14,7 @@ Ngoài phạm vi của ba task trên: triển khai AWS (VT12), k6, Street View, 
 
 ## Yêu cầu
 
-**R1. Nhập lời mời.** Người dùng dán nội dung lời mời, có thể điền link tin tuyển dụng và địa chỉ hẹn. Nội dung rỗng bị chặn ở web và ở API (HTTP 400).
+**R1. Nhập lời mời.** Người dùng dán nội dung lời mời, có thể điền link tin tuyển dụng và địa chỉ hẹn. Nội dung rỗng hoặc chỉ có khoảng trắng bị chặn ở web và ở API (HTTP 400).
 
 **R2. Trích và xác nhận dữ kiện.** `extract` trả công ty, vị trí, địa chỉ hẹn, link tin và danh sách yêu cầu cần xác minh. Người dùng sửa công ty, vị trí, địa chỉ và bỏ chọn yêu cầu trước khi đối chiếu.
 
@@ -60,13 +60,17 @@ Ngoài phạm vi của ba task trên: triển khai AWS (VT12), k6, Street View, 
 
 **R19. Hạ cấp có thông báo.** Thiếu `BEDROCK_MODEL_ID` thì chỉ dùng luật cố định để trích yêu cầu. Thiếu `GOOGLE_MAPS_API_KEY` thì địa điểm là `not_checked` (Chưa đối chiếu tự động) kèm nút mở bản đồ. Dịch vụ lỗi giữa chừng thì phần đó là `unavailable` hoặc quay về luật cố định, các phần khác vẫn có kết quả, không trả 500. Mọi trường hợp đều có dòng trong `notices`.
 
-**R20. AI chỉ trả dữ kiện có nguồn (VT07).** Bedrock Converse với công cụ bắt buộc, nhiệt độ 0. Mỗi mục AI trả về phải có đoạn trích nguyên văn nằm trong lời mời, nếu không máy chủ loại bỏ và báo số mục đã loại. Lời mời được coi là dữ liệu, không phải chỉ dẫn. AI không quyết định trạng thái. Luật cố định luôn chạy thêm để không bỏ sót yêu cầu đóng phí hay gửi giấy tờ. Chỉ văn bản lời mời được gửi tới AI.
+**R20. AI chỉ trả dữ kiện có nguồn (VT07).** Bedrock Converse với công cụ bắt buộc, nhiệt độ 0. Mỗi mục AI cần có đoạn trích trong lời mời. Máy chủ báo số mục bị loại, kể cả trích đoạn bị tách khỏi câu phủ định rõ ràng. Luật cố định chạy trên chữ có dấu và không dấu, nhận diện một số cách viết tắt về phí, giấy tờ và mã xác thực. Trạng thái do máy chủ quyết định theo dữ kiện. Chỉ văn bản lời mời được gửi tới AI.
 
 **R21. Địa điểm (VT08).** Tìm bằng Places Text Search theo `công ty + địa chỉ`. `matched` chỉ khi tên công ty khớp và địa chỉ trả về khớp địa chỉ hẹn. Công ty ở địa chỉ khác, chỉ thấy tòa nhà, hoặc không có kết quả đều là `company_unconfirmed`.
 
 **R22. Tin đăng (VT09).** Việc Thật không tự đọc trang TopCV, LinkedIn hay sàn khác. Người dùng nhập hạn nộp, ngày đăng, mã tin và trạng thái đóng tuyển mà họ thấy. `expired` chỉ khi hạn đã qua (theo giờ Việt Nam) hoặc tin ghi rõ đã đóng. Có link mà chưa có dữ kiện thì `unavailable` (Chưa kiểm tra được).
 
-**R23. Hướng dẫn (VT10).** Câu hỏi và bước tiếp theo sinh từ dữ kiện đang thiếu, không dùng văn bản AI tự do. Yêu cầu gửi giấy tờ cá nhân đưa lời mời về `needs_verification` và thêm bước \
+**R23. Hướng dẫn (VT10).** Câu hỏi và bước tiếp theo sinh từ dữ kiện đang thiếu. Yêu cầu cung cấp mã xác thực hoặc phí đưa lời mời về `caution`. Yêu cầu gửi giấy tờ cá nhân cho `needs_verification` khi chưa có tín hiệu `caution` và thêm hướng dẫn giữ giấy tờ. Khi tin chưa kiểm tra được và địa điểm chưa khớp, hệ thống dùng `insufficient_information` nếu chưa có tín hiệu cụ thể cần xử lý. Câu hỏi luôn xin kênh tuyển dụng chính thức. Tin `expired` thì câu hỏi nêu mã tin nếu có. Địa điểm `company_unconfirmed` thì câu hỏi xin tên tòa nhà (hoặc đơn vị đặt phòng khi hẹn ở văn phòng dùng chung) và số tầng. Công ty đã biết thì bỏ qua câu hỏi tên công ty.
+
+*Ghi chú: đoạn R23 trong bản commit `d03b258` bị cắt sau chữ "thêm bước". Nội dung trên được viết lại theo hành vi của `buildGuidance` trong `apps/api/src/verify.ts` và các test trong `apps/api/test/live.test.ts`. Nhóm cần rà lại.*
+
+## Tiêu chí nghiệm thu
 
 | Ca | Điều kiện đạt |
 |---|---|

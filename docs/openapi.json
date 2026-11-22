@@ -1,0 +1,1810 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Việc Thật API",
+    "version": "0.1.0",
+    "description": "Đối chiếu lời mời việc làm: tin đăng, địa điểm, người liên hệ và yêu cầu trong lời mời. Ví dụ và quy tắc trạng thái: docs/API-CONTRACT.md."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "security": [],
+  "paths": {
+    "/healthz": {
+      "get": {
+        "operationId": "getHealth",
+        "summary": "Kiểm tra API, chế độ chạy, dịch vụ đã cấu hình và trạng thái lịch sử",
+        "responses": {
+          "200": {
+            "description": "API đang chạy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/demo/cases": {
+      "get": {
+        "operationId": "listDemoCases",
+        "summary": "Danh sách ca mẫu (dữ liệu mô phỏng), không gồm fixtures và expected",
+        "responses": {
+          "200": {
+            "description": "Danh sách ca",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DemoCasesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invitations/extract": {
+      "post": {
+        "operationId": "extractInvitation",
+        "summary": "Trích dữ kiện và yêu cầu từ lời mời để người dùng xác nhận",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dữ kiện đã trích",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExtractResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR: dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: vượt giới hạn yêu cầu mỗi phút. Có header Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL_ERROR: lỗi không lường trước.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invitations/verify": {
+      "post": {
+        "operationId": "verifyInvitation",
+        "summary": "Đối chiếu dữ kiện đã xác nhận, trả bốn phần kết quả và hướng dẫn",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Kết quả đối chiếu",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VerifyResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR: dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "QUOTE_NOT_IN_SOURCE: có đoạn trích không nằm trong lời mời. details.quotes liệt kê đoạn sai.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: vượt giới hạn yêu cầu mỗi phút. Có header Retry-After.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "INTERNAL_ERROR: lỗi không lường trước.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "HISTORY_DISABLED: gửi save: true khi máy chủ chưa bật lịch sử.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/history": {
+      "get": {
+        "operationId": "listHistory",
+        "summary": "Lịch sử của thiết bị này (cookie vt_device), mới nhất trước",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Danh sách",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR: dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "HISTORY_DISABLED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/history/{id}": {
+      "get": {
+        "operationId": "getHistoryItem",
+        "summary": "Xem lại một mục lịch sử",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chi tiết",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HistoryDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR: dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: không thuộc thiết bị này hoặc đã hết hạn.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "HISTORY_DISABLED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteHistoryItem",
+        "summary": "Xóa vĩnh viễn một mục lịch sử",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Đã xóa"
+          },
+          "400": {
+            "description": "VALIDATION_ERROR: dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "HISTORY_DISABLED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/history/delete": {
+      "post": {
+        "operationId": "deleteHistoryItems",
+        "summary": "Xóa nhiều mục lịch sử đã chọn. Id không thuộc thiết bị này bị bỏ qua.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteHistoryRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Số mục đã xóa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteHistoryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "VALIDATION_ERROR: dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "HISTORY_DISABLED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "status",
+          "service",
+          "version",
+          "time",
+          "modes",
+          "history",
+          "capabilities"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok"
+            ]
+          },
+          "service": {
+            "type": "string",
+            "enum": [
+              "viec-that-api"
+            ]
+          },
+          "version": {
+            "type": "string"
+          },
+          "time": {
+            "type": "string"
+          },
+          "modes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "simulated",
+                "live"
+              ]
+            }
+          },
+          "history": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "enabled",
+              "ttlDays"
+            ],
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "ttlDays": {
+                "type": "integer"
+              }
+            }
+          },
+          "capabilities": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "ai",
+              "places"
+            ],
+            "properties": {
+              "ai": {
+                "type": "boolean"
+              },
+              "places": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "DemoCasesResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "cases"
+        ],
+        "properties": {
+          "cases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "title",
+                "kind",
+                "input"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "simulated"
+                  ]
+                },
+                "input": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "invitationText",
+                    "jobUrl",
+                    "meetingAddress"
+                  ],
+                  "properties": {
+                    "invitationText": {
+                      "type": "string"
+                    },
+                    "jobUrl": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "meetingAddress": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ExtractRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mode",
+          "invitationText"
+        ],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "simulated",
+              "live"
+            ]
+          },
+          "invitationText": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000,
+            "pattern": "\\S"
+          },
+          "jobUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "meetingAddress": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          }
+        }
+      },
+      "ExtractResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mode",
+          "simulated",
+          "fields",
+          "requirements",
+          "notices"
+        ],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "simulated",
+              "live"
+            ]
+          },
+          "simulated": {
+            "type": "boolean"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "company",
+              "role",
+              "meetingAddress",
+              "jobUrl"
+            ],
+            "properties": {
+              "company": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "value",
+                  "quote",
+                  "origin"
+                ],
+                "properties": {
+                  "value": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "quote": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "origin": {
+                    "type": "string",
+                    "enum": [
+                      "invitation_text",
+                      "user_input",
+                      "simulated_source",
+                      "ai",
+                      "not_found"
+                    ]
+                  }
+                }
+              },
+              "role": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "value",
+                  "quote",
+                  "origin"
+                ],
+                "properties": {
+                  "value": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "quote": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "origin": {
+                    "type": "string",
+                    "enum": [
+                      "invitation_text",
+                      "user_input",
+                      "simulated_source",
+                      "ai",
+                      "not_found"
+                    ]
+                  }
+                }
+              },
+              "meetingAddress": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "value",
+                  "quote",
+                  "origin"
+                ],
+                "properties": {
+                  "value": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "quote": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "origin": {
+                    "type": "string",
+                    "enum": [
+                      "invitation_text",
+                      "user_input",
+                      "simulated_source",
+                      "ai",
+                      "not_found"
+                    ]
+                  }
+                }
+              },
+              "jobUrl": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "value",
+                  "quote",
+                  "origin"
+                ],
+                "properties": {
+                  "value": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "quote": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "origin": {
+                    "type": "string",
+                    "enum": [
+                      "invitation_text",
+                      "user_input",
+                      "simulated_source",
+                      "ai",
+                      "not_found"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "requirements": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "quote"
+              ],
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "fee_request",
+                    "attendance_confirmation",
+                    "shared_office_meeting",
+                    "address_pending",
+                    "document_request",
+                    "credential_request",
+                    "other_request"
+                  ]
+                },
+                "quote": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 300
+                }
+              }
+            }
+          },
+          "notices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "VerifyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mode",
+          "invitationText",
+          "confirmed"
+        ],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "simulated",
+              "live"
+            ]
+          },
+          "invitationText": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000,
+            "pattern": "\\S"
+          },
+          "jobUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "save": {
+            "type": "boolean"
+          },
+          "jobPosting": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "jobCode": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 100
+              },
+              "postedOn": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "closesOn": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              },
+              "closed": {
+                "type": "boolean"
+              }
+            }
+          },
+          "confirmed": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "company",
+              "role",
+              "meetingAddress",
+              "requirements"
+            ],
+            "properties": {
+              "company": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "role": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "meetingAddress": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 500
+              },
+              "requirements": {
+                "type": "array",
+                "maxItems": 10,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "quote"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "fee_request",
+                        "attendance_confirmation",
+                        "shared_office_meeting",
+                        "address_pending",
+                        "document_request",
+                        "credential_request",
+                        "other_request"
+                      ]
+                    },
+                    "quote": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "VerifyResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "mode",
+          "simulated",
+          "checkedOn",
+          "job",
+          "location",
+          "contact",
+          "invitation",
+          "guidance",
+          "notices",
+          "historyId"
+        ],
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "simulated",
+              "live"
+            ]
+          },
+          "simulated": {
+            "type": "boolean"
+          },
+          "checkedOn": {
+            "type": "string"
+          },
+          "job": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "basis",
+              "source",
+              "checkedOn",
+              "details"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "expired",
+                  "unavailable",
+                  "not_checked"
+                ]
+              },
+              "basis": {
+                "type": "string"
+              },
+              "source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "url",
+                  "simulated"
+                ],
+                "properties": {
+                  "label": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "url": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "simulated": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "checkedOn": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "details": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "company",
+                  "role",
+                  "jobCode",
+                  "postedOn",
+                  "closesOn",
+                  "reason"
+                ],
+                "properties": {
+                  "company": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "role": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "jobCode": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "postedOn": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "closesOn": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "reason": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "location": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "basis",
+              "source",
+              "checkedOn",
+              "place",
+              "mapUrl"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "matched",
+                  "company_unconfirmed",
+                  "unavailable",
+                  "not_checked"
+                ]
+              },
+              "basis": {
+                "type": "string"
+              },
+              "source": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "label",
+                  "url",
+                  "simulated"
+                ],
+                "properties": {
+                  "label": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "url": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "simulated": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "checkedOn": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "place": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "displayName",
+                  "address"
+                ],
+                "properties": {
+                  "displayName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "address": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              },
+              "mapUrl": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "contact": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "basis"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "unverified",
+                  "verified"
+                ]
+              },
+              "basis": {
+                "type": "string"
+              }
+            }
+          },
+          "invitation": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "status",
+              "basis",
+              "requirements"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "caution",
+                  "needs_verification",
+                  "no_signal_observed",
+                  "insufficient_information"
+                ]
+              },
+              "basis": {
+                "type": "string"
+              },
+              "requirements": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "quote"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "fee_request",
+                        "attendance_confirmation",
+                        "shared_office_meeting",
+                        "address_pending",
+                        "document_request",
+                        "credential_request",
+                        "other_request"
+                      ]
+                    },
+                    "quote": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "guidance": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "nextStep",
+              "suggestedQuestion"
+            ],
+            "properties": {
+              "nextStep": {
+                "type": "string"
+              },
+              "suggestedQuestion": {
+                "type": "string"
+              }
+            }
+          },
+          "notices": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "historyId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      },
+      "HistoryListResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "items"
+        ],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "id",
+                "createdAt",
+                "expiresAt",
+                "mode",
+                "simulated",
+                "title",
+                "jobStatus",
+                "locationStatus",
+                "invitationStatus"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                },
+                "createdAt": {
+                  "type": "string"
+                },
+                "expiresAt": {
+                  "type": "string"
+                },
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "simulated",
+                    "live"
+                  ]
+                },
+                "simulated": {
+                  "type": "boolean"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "jobStatus": {
+                  "type": "string",
+                  "enum": [
+                    "open",
+                    "expired",
+                    "unavailable",
+                    "not_checked"
+                  ]
+                },
+                "locationStatus": {
+                  "type": "string",
+                  "enum": [
+                    "matched",
+                    "company_unconfirmed",
+                    "unavailable",
+                    "not_checked"
+                  ]
+                },
+                "invitationStatus": {
+                  "type": "string",
+                  "enum": [
+                    "caution",
+                    "needs_verification",
+                    "no_signal_observed",
+                    "insufficient_information"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "HistoryDetailResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "createdAt",
+          "expiresAt",
+          "title",
+          "input",
+          "confirmed",
+          "result"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "input": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "invitationText",
+              "jobUrl"
+            ],
+            "properties": {
+              "invitationText": {
+                "type": "string"
+              },
+              "jobUrl": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "confirmed": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "company",
+              "role",
+              "meetingAddress",
+              "requirements"
+            ],
+            "properties": {
+              "company": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "role": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 200
+              },
+              "meetingAddress": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 500
+              },
+              "requirements": {
+                "type": "array",
+                "maxItems": 10,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "kind",
+                    "quote"
+                  ],
+                  "properties": {
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "fee_request",
+                        "attendance_confirmation",
+                        "shared_office_meeting",
+                        "address_pending",
+                        "document_request",
+                        "credential_request",
+                        "other_request"
+                      ]
+                    },
+                    "quote": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 300
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "result": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "mode",
+              "simulated",
+              "checkedOn",
+              "job",
+              "location",
+              "contact",
+              "invitation",
+              "guidance",
+              "notices",
+              "historyId"
+            ],
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "simulated",
+                  "live"
+                ]
+              },
+              "simulated": {
+                "type": "boolean"
+              },
+              "checkedOn": {
+                "type": "string"
+              },
+              "job": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "status",
+                  "basis",
+                  "source",
+                  "checkedOn",
+                  "details"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "open",
+                      "expired",
+                      "unavailable",
+                      "not_checked"
+                    ]
+                  },
+                  "basis": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "label",
+                      "url",
+                      "simulated"
+                    ],
+                    "properties": {
+                      "label": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "url": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "simulated": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "checkedOn": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "details": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "company",
+                      "role",
+                      "jobCode",
+                      "postedOn",
+                      "closesOn",
+                      "reason"
+                    ],
+                    "properties": {
+                      "company": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "role": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "jobCode": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "postedOn": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "closesOn": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "reason": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    }
+                  }
+                }
+              },
+              "location": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "status",
+                  "basis",
+                  "source",
+                  "checkedOn",
+                  "place",
+                  "mapUrl"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "matched",
+                      "company_unconfirmed",
+                      "unavailable",
+                      "not_checked"
+                    ]
+                  },
+                  "basis": {
+                    "type": "string"
+                  },
+                  "source": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "label",
+                      "url",
+                      "simulated"
+                    ],
+                    "properties": {
+                      "label": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "url": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "simulated": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "checkedOn": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "place": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "displayName",
+                      "address"
+                    ],
+                    "properties": {
+                      "displayName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "address": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    }
+                  },
+                  "mapUrl": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                }
+              },
+              "contact": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "status",
+                  "basis"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "unverified",
+                      "verified"
+                    ]
+                  },
+                  "basis": {
+                    "type": "string"
+                  }
+                }
+              },
+              "invitation": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "status",
+                  "basis",
+                  "requirements"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "caution",
+                      "needs_verification",
+                      "no_signal_observed",
+                      "insufficient_information"
+                    ]
+                  },
+                  "basis": {
+                    "type": "string"
+                  },
+                  "requirements": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "kind",
+                        "quote"
+                      ],
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "fee_request",
+                            "attendance_confirmation",
+                            "shared_office_meeting",
+                            "address_pending",
+                            "document_request",
+                            "credential_request",
+                            "other_request"
+                          ]
+                        },
+                        "quote": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 300
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "guidance": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "nextStep",
+                  "suggestedQuestion"
+                ],
+                "properties": {
+                  "nextStep": {
+                    "type": "string"
+                  },
+                  "suggestedQuestion": {
+                    "type": "string"
+                  }
+                }
+              },
+              "notices": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "historyId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      },
+      "DeleteHistoryRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "ids"
+        ],
+        "properties": {
+          "ids": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "items": {
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+            }
+          }
+        }
+      },
+      "DeleteHistoryResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "deleted"
+        ],
+        "properties": {
+          "deleted": {
+            "type": "integer"
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_ERROR",
+                  "QUOTE_NOT_IN_SOURCE",
+                  "SOURCE_MODE_UNSUPPORTED",
+                  "NOT_FOUND",
+                  "HISTORY_DISABLED",
+                  "RATE_LIMITED",
+                  "INTERNAL_ERROR"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {}
+            }
+          }
+        }
+      }
+    }
+  }
+}

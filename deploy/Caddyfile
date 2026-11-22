@@ -1,0 +1,13 @@
+{$VIECTHAT_SITE} {
+	encode zstd gzip
+	root * "{$VIECTHAT_WEB_ROOT:/var/www/viec-that}"
+
+	@api path /healthz /api /api/*
+	handle @api {
+		reverse_proxy 127.0.0.1:{$VIECTHAT_API_PORT:3000}
+	}
+
+	handle {
+		file_server
+	}
+}

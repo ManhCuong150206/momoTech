@@ -38,6 +38,7 @@ export const REQUIREMENT_LABEL: Record<RequirementKind, string> = {
   shared_office_meeting: 'Hẹn tại văn phòng dùng chung',
   address_pending: 'Địa chỉ chưa được cung cấp',
   document_request: 'Yêu cầu gửi giấy tờ cá nhân',
+  credential_request: 'Yêu cầu cung cấp mã xác thực hoặc mật khẩu',
   other_request: 'Yêu cầu khác cần lưu ý',
 };
 

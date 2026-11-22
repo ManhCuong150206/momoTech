@@ -1,0 +1,131 @@
+[
+  {
+    "id": "EVAL-01",
+    "text": "Chao em, ben minh con suat sang mai. Em CK 200k truoc buoi hen de giu lich nhe.",
+    "status": "caution",
+    "signals": { "fee_request": "CK 200k" }
+  },
+  {
+    "id": "EVAL-02",
+    "text": "Em chup 2 mat the can cuoc roi gui anh qua chat nhe.",
+    "status": "needs_verification",
+    "signals": { "document_request": "chup 2 mat the can cuoc" }
+  },
+  {
+    "id": "EVAL-03",
+    "text": "📩 Để xác nhận lịch, em gửi mã OTP vừa nhận nhé.",
+    "status": "caution",
+    "signals": { "credential_request": "gửi mã OTP" }
+  },
+  {
+    "id": "EVAL-04",
+    "text": "Buổi phỏng vấn miễn phí. Em không cần đặt cọc. Vui lòng xác nhận có tham dự được không.",
+    "openJob": true,
+    "status": "no_signal_observed",
+    "signals": { "attendance_confirmation": "xác nhận có tham dự được không" }
+  },
+  {
+    "id": "EVAL-05",
+    "text": "Em không cần đóng phí tư vấn, nhưng phải nộp phí hồ sơ trước buổi hẹn.",
+    "status": "caution",
+    "signals": { "fee_request": "nộp phí hồ sơ" }
+  },
+  {
+    "id": "EVAL-06",
+    "text": "Không cung cấp mã OTP hoặc mật khẩu cho bất kỳ ai. Chúc em phỏng vấn tốt.",
+    "openJob": true,
+    "status": "no_signal_observed",
+    "signals": {}
+  },
+  {
+    "id": "EVAL-07",
+    "text": "Team đang chốt slot onboarding, em qua đó rồi anh nhắn tiếp.",
+    "address": "12 Đường Ví Dụ",
+    "status": "insufficient_information",
+    "signals": {}
+  },
+  {
+    "id": "EVAL-08",
+    "text": "Mời em trao đổi với nhóm thiết kế qua video call. Vui lòng xác nhận có tham dự được không.",
+    "openJob": true,
+    "status": "no_signal_observed",
+    "signals": { "attendance_confirmation": "xác nhận có tham dự được không" }
+  },
+  {
+    "id": "EVAL-09",
+    "text": "Nếu em không chuyển tiền thì mất suất phỏng vấn.",
+    "status": "caution",
+    "signals": { "fee_request": "không chuyển tiền thì mất suất" }
+  },
+  {
+    "id": "EVAL-10",
+    "text": "Em chuyển khoản 250.000 đồng trước buổi hẹn nhé.",
+    "status": "caution",
+    "signals": { "fee_request": "chuyển khoản 250.000 đồng" }
+  },
+  {
+    "id": "EVAL-11",
+    "text": "Em gửi trước ảnh CCCD nhé. Địa chỉ sẽ gửi sau.",
+    "status": "needs_verification",
+    "signals": { "document_request": "gửi trước ảnh CCCD", "address_pending": "Địa chỉ sẽ gửi sau" }
+  },
+  {
+    "id": "EVAL-12",
+    "text": "Do not send your password. The interview is online.",
+    "openJob": true,
+    "status": "no_signal_observed",
+    "signals": {}
+  },
+  {
+    "id": "EVAL-13",
+    "text": "Hi em, send me your OTP to confirm the appointment.",
+    "status": "caution",
+    "signals": { "credential_request": "send me your OTP" }
+  },
+  {
+    "id": "EVAL-14",
+    "text": "Em chưa cần gửi giấy tờ cá nhân. Lúc phỏng vấn chỉ mang CV.",
+    "openJob": true,
+    "status": "no_signal_observed",
+    "signals": {}
+  },
+  {
+    "id": "EVAL-15",
+    "text": "Bên mình sẽ chuyển tiền hoàn lại chi phí đi lại sau phỏng vấn.",
+    "openJob": true,
+    "status": "no_signal_observed",
+    "signals": {}
+  },
+  {
+    "id": "EVAL-16",
+    "text": "Em không phải chuyển tiền. Em chụp ảnh hộ chiếu rồi gửi qua nhóm.",
+    "status": "needs_verification",
+    "signals": { "document_request": "chụp ảnh hộ chiếu" }
+  },
+  {
+    "id": "EVAL-17",
+    "text": "Em gửi CV qua email rồi mang CCCD để xuất trình ở lễ tân nhé.",
+    "openJob": true,
+    "status": "no_signal_observed",
+    "signals": {}
+  },
+  {
+    "id": "EVAL-18",
+    "text": "Vào trang tuyển dụng, em nhập email để tạo mật khẩu cho tài khoản của mình nhé.",
+    "openJob": true,
+    "status": "no_signal_observed",
+    "signals": {}
+  },
+  {
+    "id": "EVAL-19",
+    "text": "Em CK vào STK anh gửi để giữ lịch, sáng mai mình gặp nhé.",
+    "status": "caution",
+    "signals": { "fee_request": "CK vào STK" }
+  },
+  {
+    "id": "EVAL-20",
+    "text": "Vui lòng thanh toán lệ phí hồ sơ trước khi nhận lịch phỏng vấn.",
+    "status": "caution",
+    "signals": { "fee_request": "thanh toán lệ phí hồ sơ" }
+  }
+]

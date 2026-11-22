@@ -1,0 +1,21 @@
+[Unit]
+Description=Viec That API
+After=network.target
+
+[Service]
+Type=simple
+User=viecthat
+Group=viecthat
+WorkingDirectory=/opt/viec-that
+Environment=NODE_ENV=production
+EnvironmentFile=/etc/viec-that/api.env
+ExecStart=/usr/bin/node-24 --import tsx apps/api/src/server.ts
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+
+[Install]
+WantedBy=multi-user.target

@@ -26,20 +26,24 @@ shared/schemas.ts    JSON Schema, Fastify dùng để kiểm tra vào và tuần
 | `location` | `matched`, `company_unconfirmed`, `unavailable`, `not_checked` |
 | `contact` | `unverified`, `verified` (giai đoạn này chỉ trả `unverified`) |
 | `invitation` | `caution`, `needs_verification`, `no_signal_observed`, `insufficient_information` |
-| `requirements[].kind` | `fee_request`, `attendance_confirmation`, `shared_office_meeting`, `address_pending` |
+| `requirements[].kind` | `fee_request`, `attendance_confirmation`, `shared_office_meeting`, `address_pending`, `document_request`, `credential_request`, `other_request` |
 
-Quy tắc `invitation.status` theo thứ tự: có `fee_request` thì `caution`. Tin `unavailable` hoặc `not_checked` và không có địa chỉ thì `insufficient_information`. Địa điểm `company_unconfirmed` thì `needs_verification`. Còn lại là `no_signal_observed`, nghĩa là chưa thấy dấu hiệu cần cảnh báo, chưa phải xác nhận lời mời là thật.
+`invitation.status` xét theo thứ tự. Yêu cầu mã xác thực hoặc phí cho `caution`. Yêu cầu giấy tờ, địa điểm chưa xác nhận công ty hoặc yêu cầu khác cần làm rõ cho `needs_verification`. Tin chưa kiểm tra được và địa điểm chưa khớp cho `insufficient_information`. Những trường hợp còn lại cho `no_signal_observed` trong phạm vi dữ kiện đã đối chiếu.
+
+Hợp đồng đầy đủ kèm ví dụ VT-DEMO-01 lấy từ phản hồi thật: [`docs/API-CONTRACT.md`](../../../docs/API-CONTRACT.md). Mô tả máy đọc được: [`docs/openapi.json`](../../../docs/openapi.json) (OpenAPI 3.1, sinh từ `shared/schemas.ts` bằng `npm run openapi -w apps/api`).
 
 ## Mã lỗi
 
 | HTTP | `error.code` | Khi nào |
 |---|---|---|
-| 400 | `VALIDATION_ERROR` | Thiếu trường, sai kiểu, chuỗi rỗng, có trường lạ. `details` chứa lỗi từ bộ kiểm tra. |
-| 404 | `NOT_FOUND` | Đường dẫn không tồn tại. |
+| 400 | `VALIDATION_ERROR` | Thiếu trường, sai kiểu, chuỗi rỗng hoặc chỉ có khoảng trắng, có trường lạ. `details` chứa lỗi từ bộ kiểm tra. JSON hỏng cũng trả mã này, không có `details`. |
+| 404 | `NOT_FOUND` | Đường dẫn không tồn tại, kể cả gọi sai phương thức. |
 | 422 | `QUOTE_NOT_IN_SOURCE` | Một `quote` không nằm trong `invitationText`. `details.quotes` liệt kê đoạn sai. |
 | 500 | `INTERNAL_ERROR` | Lỗi không lường trước. Thông báo chung, không lộ nội dung. |
 | 503 | `HISTORY_DISABLED` | Gọi lịch sử hoặc `save: true` khi chưa cấu hình `DATABASE_URL`. |
 | 429 | `RATE_LIMITED` | Vượt giới hạn yêu cầu mỗi phút. Có header `Retry-After`. |
+
+`SOURCE_MODE_UNSUPPORTED` còn trong enum `ErrorCode` nhưng không endpoint nào trả, vì cả hai chế độ đều đã được hỗ trợ.
 
 Dạng lỗi:
 
@@ -54,7 +58,7 @@ Giới hạn đầu vào: `invitationText` 1–5000 ký tự, `jobUrl` tối đa
 Phản hồi 200:
 
 ```json
-{ "status": "ok", "service": "viec-that-api", "version": "0.1.0", "time": "2026-11-21T11:33:03.120Z", "modes": ["simulated"], "history": { "enabled": true, "ttlDays": 30 } }
+{ "status": "ok", "service": "viec-that-api", "version": "0.1.0", "time": "2026-11-22T04:34:55.798Z", "modes": ["simulated", "live"], "history": { "enabled": true, "ttlDays": 30 }, "capabilities": { "ai": false, "places": false } }
 ```
 
 ## `POST /api/v1/invitations/extract`
@@ -172,8 +176,8 @@ Trả `{ "cases": [{ "id", "title", "kind": "simulated", "input": { "invitationT
 Mã: `apps/api/src/ai.ts` (Bedrock), `places.ts` (Google Places), `extract.ts` (`extractLive`), `verify.ts` (`verifyLive`).
 
 ```
-extract live:  lời mời ──▶ Bedrock Converse (tool bắt buộc) ──▶ sanitizeAiOutput (loại mục không có trích dẫn)
-                      └──▶ luật cố định (phí, giấy tờ, ...)  ──▶ gộp, AI ưu tiên, luật bổ sung loại còn thiếu
+extract live:  lời mời ──▶ Bedrock Converse (tool bắt buộc) ──▶ kiểm tra đoạn trích và phủ định rõ ràng
+                      └──▶ luật cố định (phí, giấy tờ, mã xác thực…) ──▶ ưu tiên đoạn trích của luật khi trùng loại, AI bổ sung loại còn thiếu
 verify live:   dữ kiện đã xác nhận ──▶ job: dữ kiện người dùng nhập + ngày hôm nay (giờ VN)
                                   └──▶ location: Places Text Search ──▶ evaluatePlaces
                                   └──▶ invitation + guidance: luật trên các kết quả trên
@@ -181,7 +185,7 @@ verify live:   dữ kiện đã xác nhận ──▶ job: dữ kiện người 
 
 - `VerifyRequest.jobPosting` (tùy chọn): `{ jobCode, postedOn, closesOn, closed }`. Ngày dạng `YYYY-MM-DD`.
 - `HealthResponse.capabilities`: `{ ai, places }` cho web biết dịch vụ nào đã bật.
-- `RequirementKind` thêm `document_request` và `other_request`. `FieldOrigin` thêm `ai`.
+- `RequirementKind` hỗ trợ `document_request`, `credential_request` và `other_request`. `FieldOrigin` hỗ trợ `ai`.
 - Cấu hình: `BEDROCK_MODEL_ID`, `AWS_REGION`, `GOOGLE_MAPS_API_KEY`. Thông tin xác thực AWS lấy từ chuỗi mặc định (IAM role trên EC2, SSO trên máy cá nhân). Không đặt khóa AWS vào `.env`.
 - Kiểm tra dịch vụ thật: `npm run check:services -w apps/api` (xem mục 7 của `README.md`).
 
@@ -252,6 +256,6 @@ Trạng thái xử lý: nút đổi chữ và bị khóa khi đang gọi API. L�
 
 ## Chiến lược kiểm thử
 
-- API (`apps/api/test`): chạy cả bốn ca qua `extract` rồi `verify`, so `jobStatus`, `locationStatus`, `contactStatus`, `invitationStatus` và `evidenceQuotes` với `expected`. Phản hồi được kiểm tra bằng Ajv theo schema. Có ca lỗi 400, 404, 422, 501.
+- API (`apps/api/test`): chạy cả bốn ca qua `extract` rồi `verify`, so `jobStatus`, `locationStatus`, `contactStatus`, `invitationStatus` và `evidenceQuotes` với `expected`. Phản hồi được kiểm tra bằng Ajv theo schema. Có ca lỗi 400 (kể cả lời mời chỉ có khoảng trắng), 404, 422, 429, 503. `docs/openapi.json` được so với schema hiện tại và mọi đường dẫn trong đó phải có trên API.
 - Web (`apps/web/test`): dựng giao diện với `fetch` nối vào API thật (Fastify inject). Chạy VT-DEMO-01 đến bước sao chép, VT-DEMO-02, VT-DEMO-04, gửi rỗng và lỗi mạng.
 - Câu hướng dẫn so theo mẫu và từ khóa, không so từng chữ với `expected`.

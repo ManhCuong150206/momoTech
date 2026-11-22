@@ -8,6 +8,8 @@
     "start": "tsx src/server.ts",
     "migrate": "tsx src/migrate.ts",
     "check:services": "tsx src/tools/check-services.ts",
+    "load:server": "tsx src/tools/load-server.ts",
+    "openapi": "tsx src/tools/openapi.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run"
   },

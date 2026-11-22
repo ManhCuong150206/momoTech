@@ -18,6 +18,7 @@ export type RequirementKind =
   | 'shared_office_meeting'
   | 'address_pending'
   | 'document_request'
+  | 'credential_request'
   | 'other_request';
 
 export type FieldOrigin = 'invitation_text' | 'user_input' | 'simulated_source' | 'ai' | 'not_found';

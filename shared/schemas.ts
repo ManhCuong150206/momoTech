@@ -3,6 +3,8 @@
 const str = { type: 'string' } as const;
 const strOrNull = { type: ['string', 'null'] } as const;
 const mode = { type: 'string', enum: ['simulated', 'live'] } as const;
+// R1: nội dung chỉ có khoảng trắng cũng là rỗng.
+const invitationText = { type: 'string', minLength: 1, maxLength: 5000, pattern: '\\S' } as const;
 
 const requirement = {
   type: 'object',
@@ -17,6 +19,7 @@ const requirement = {
         'shared_office_meeting',
         'address_pending',
         'document_request',
+        'credential_request',
         'other_request',
       ],
     },
@@ -51,7 +54,7 @@ export const extractRequestSchema = {
   required: ['mode', 'invitationText'],
   properties: {
     mode,
-    invitationText: { type: 'string', minLength: 1, maxLength: 5000 },
+    invitationText,
     jobUrl: { type: ['string', 'null'], maxLength: 2000 },
     meetingAddress: { type: ['string', 'null'], maxLength: 500 },
   },
@@ -86,7 +89,7 @@ export const verifyRequestSchema = {
   required: ['mode', 'invitationText', 'confirmed'],
   properties: {
     mode,
-    invitationText: { type: 'string', minLength: 1, maxLength: 5000 },
+    invitationText,
     jobUrl: { type: ['string', 'null'], maxLength: 2000 },
     save: { type: 'boolean' },
     jobPosting: {

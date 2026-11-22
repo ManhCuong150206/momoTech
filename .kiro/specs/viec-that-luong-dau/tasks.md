@@ -29,3 +29,17 @@
 - [x] 20. Hạ cấp có thông báo khi thiếu dịch vụ, giới hạn tần suất, giới hạn lịch sử
 - [ ] 21. Gọi Bedrock thật và Places thật rồi chạy ``npm run check:services`` (cần VT02, VT03)
 - [ ] 22. Thử lời mời mới bằng AI thật trên iPhone (VT11, VT15)
+
+## Rà soát sau VT03 (22/11/2026)
+
+- [x] 23. Hợp đồng API `docs/API-CONTRACT.md` với ví dụ VT-DEMO-01 lấy từ phản hồi thật và danh sách điểm cần nhóm duyệt (VT04)
+- [x] 24. Chặn lời mời chỉ có khoảng trắng ở API (R1)
+- [x] 25. Thêm dòng `notices` khi Places lỗi giữa chừng (R19)
+- [x] 26. Test giao diện: thiếu hạn nộp, đã đóng tuyển, Places lỗi, AI lỗi
+- [x] 27. Thẻ Tin đăng có nút mở link tham chiếu (chỉ http, https)
+- [x] 28. OpenAPI 3.1 `docs/openapi.json` sinh từ `shared/schemas.ts`, có test chống lệch
+- [x] 29. Viết lại R23 bị cắt và cập nhật `design.md` theo mã
+- [x] 30. Cấu hình Caddy, systemd và kịch bản k6 chạy local (VT12, VT14 phần chuẩn bị)
+- [x] 31. Bộ 20 lời mời ngoài ca demo cho luật dự phòng (`data/evaluation/`)
+- [ ] 32. Nhóm duyệt các điểm còn mở ở mục 7 của `docs/API-CONTRACT.md`
+- [ ] 33. Triển khai EC2 và HTTPS công khai (VT12), đo k6 trên bản triển khai (VT14)

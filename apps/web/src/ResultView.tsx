@@ -20,6 +20,16 @@ function StatusPill({ tone, children }: { tone: Tone; children: string }) {
   return <span className={`pill pill-${tone}`}>{children}</span>;
 }
 
+function jobReferenceUrl(value: string | null): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function copyText(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
@@ -40,6 +50,7 @@ export async function copyText(text: string): Promise<boolean> {
 
 export default function ResultView({ result, children }: { result: VerifyResponse; children?: ReactNode }) {
   const [copied, setCopied] = useState<'ok' | 'fail' | null>(null);
+  const referenceUrl = result.simulated ? null : jobReferenceUrl(result.job.source.url);
 
   async function onCopy() {
     setCopied((await copyText(result.guidance.suggestedQuestion)) ? 'ok' : 'fail');
@@ -63,6 +74,11 @@ export default function ResultView({ result, children }: { result: VerifyRespons
           Nguồn: {result.job.source.label ?? 'chưa có'}
           {result.job.checkedOn && ` · kiểm tra ngày ${result.job.checkedOn}`}
         </p>
+        {referenceUrl && (
+          <a href={referenceUrl} target="_blank" rel="noopener noreferrer" className="btn">
+            Mở tin tham chiếu
+          </a>
+        )}
       </article>
 
       <article className="card" aria-label="Địa điểm">

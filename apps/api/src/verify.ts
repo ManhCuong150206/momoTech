@@ -156,23 +156,27 @@ function evaluateInvitation(
   job: JobResult,
   location: LocationResult,
   requirements: Requirement[],
-  hasAddress: boolean,
 ): InvitationResult {
-  const fee = requirements.find((r) => r.kind === 'fee_request');
   let status: InvitationStatus;
   let basis: string;
-  if (fee) {
+  if (requirements.some((r) => r.kind === 'credential_request')) {
+    status = 'caution';
+    basis = 'Lời mời yêu cầu mã xác thực hoặc mật khẩu. Cần xác minh người yêu cầu qua kênh chính thức.';
+  } else if (requirements.some((r) => r.kind === 'fee_request')) {
     status = 'caution';
     basis = 'Lời mời yêu cầu một khoản phí. Cần xác minh trước khi chuyển tiền.';
-  } else if ((job.status === 'unavailable' || job.status === 'not_checked') && !hasAddress) {
-    status = 'insufficient_information';
-    basis = 'Thiếu tin đăng đọc được và địa chỉ hẹn nên chưa đủ dữ kiện để đánh giá.';
-  } else if (location.status === 'company_unconfirmed') {
-    status = 'needs_verification';
-    basis = 'Địa điểm hẹn chưa xác nhận được công ty. Cần hỏi lại qua kênh chính thức.';
   } else if (requirements.some((r) => r.kind === 'document_request')) {
     status = 'needs_verification';
     basis = 'Lời mời yêu cầu gửi giấy tờ cá nhân. Chỉ gửi sau khi xác minh được công ty và người liên hệ.';
+  } else if (location.status === 'company_unconfirmed') {
+    status = 'needs_verification';
+    basis = 'Địa điểm hẹn chưa xác nhận được công ty. Cần hỏi lại qua kênh chính thức.';
+  } else if (requirements.some((r) => r.kind === 'other_request')) {
+    status = 'needs_verification';
+    basis = 'Lời mời có yêu cầu cần làm rõ. Hãy xác minh mục đích qua kênh tuyển dụng chính thức.';
+  } else if ((job.status === 'unavailable' || job.status === 'not_checked') && location.status !== 'matched') {
+    status = 'insufficient_information';
+    basis = 'Chưa có dữ kiện xác minh từ tin đăng hoặc địa điểm hẹn để đánh giá lời mời.';
   } else {
     status = 'no_signal_observed';
     basis = 'Chưa thấy dấu hiệu cần cảnh báo trong dữ kiện đã đối chiếu. Đây chưa phải xác nhận lời mời là thật.';
@@ -212,16 +216,21 @@ export function buildGuidance(
     steps.push('địa điểm phỏng vấn');
     asks.push(hasKind('shared_office_meeting') ? 'tên đơn vị đặt phòng, số tầng' : 'tên tòa nhà, số tầng');
   }
+  if (hasKind('other_request')) asks.push('mục đích của yêu cầu');
   asks.push('kênh tuyển dụng chính thức');
   const needsMoreInfo = invitation.status === 'insufficient_information';
 
   let nextStep: string;
   if (needsMoreInfo) {
-    nextStep = 'Bổ sung tên công ty, vị trí, nội dung tin có thể xem và địa chỉ hẹn khi nhận được.';
+    nextStep = hasAddress
+      ? 'Bổ sung thông tin tin tuyển dụng và xác minh địa chỉ đã nhập qua kênh chính thức.'
+      : 'Bổ sung tên công ty, vị trí, nội dung tin có thể xem và địa chỉ hẹn khi nhận được.';
   } else {
     const parts: string[] = [];
     if (hasKind('fee_request')) parts.push('Tạm dừng đóng phí.');
     if (hasKind('document_request')) parts.push('Chưa gửi giấy tờ cá nhân.');
+    if (hasKind('credential_request')) parts.push('Giữ riêng mã xác thực và mật khẩu.');
+    if (hasKind('other_request')) parts.push('Hỏi rõ mục đích trước khi làm theo yêu cầu.');
     if (steps.length) parts.push(`Xác minh ${joinVi(steps)} qua kênh chính thức của công ty trước khi đi gặp.`);
     else parts.push('Đối chiếu lịch với kênh tuyển dụng chính thức nếu chưa biết người liên hệ.');
     nextStep = parts.join(' ');
@@ -256,7 +265,7 @@ export function verifySimulated(req: VerifyRequest, data: DemoData): VerifyRespo
   const location = evaluateLocation(demo, req, asOf, notices);
   const contact = evaluateContact();
   const hasAddress = !!req.confirmed.meetingAddress?.trim();
-  const invitation = evaluateInvitation(job, location, req.confirmed.requirements, hasAddress);
+  const invitation = evaluateInvitation(job, location, req.confirmed.requirements);
   const guidance = buildGuidance(job, location, invitation, hasAddress, !!req.confirmed.company?.trim());
 
   return {
@@ -404,9 +413,13 @@ export async function verifyLive(
 
   const job = evaluateJobLive(req, today);
   const location = await evaluateLocationLive(req, deps.places, today);
+  // R19: dịch vụ lỗi giữa chừng cũng phải có dòng trong notices, không chỉ ở basis của thẻ.
+  if (deps.places && location.status === 'unavailable') {
+    notices.push('Dịch vụ bản đồ tạm lỗi nên địa điểm chưa được đối chiếu tự động. Các phần khác vẫn có kết quả.');
+  }
   const contact = evaluateContact();
   const hasAddress = !!req.confirmed.meetingAddress?.trim();
-  const invitation = evaluateInvitation(job, location, req.confirmed.requirements, hasAddress);
+  const invitation = evaluateInvitation(job, location, req.confirmed.requirements);
   const guidance = buildGuidance(job, location, invitation, hasAddress, !!req.confirmed.company?.trim());
   return { mode: 'live', simulated: false, checkedOn: today, job, location, contact, invitation, guidance, notices, historyId: null };
 }

@@ -144,6 +144,20 @@ describe('lỗi', () => {
     expect(res.statusCode).toBe(400);
     expect(res.json().error.code).toBe('VALIDATION_ERROR');
   });
+
+  it('400 VALIDATION_ERROR khi invitationText chỉ có khoảng trắng (R1), ở cả extract và verify', async () => {
+    const blank = ' \n\t ';
+    const ex = await app.inject({ method: 'POST', url: '/api/v1/invitations/extract', payload: { mode: 'live', invitationText: blank } });
+    expect(ex.statusCode).toBe(400);
+    expect(ex.json().error.details[0].keyword).toBe('pattern');
+    const ve = await app.inject({
+      method: 'POST',
+      url: '/api/v1/invitations/verify',
+      payload: { mode: 'live', invitationText: blank, confirmed: { company: null, role: null, meetingAddress: null, requirements: [] } },
+    });
+    expect(ve.statusCode).toBe(400);
+    expect(ve.json().error.code).toBe('VALIDATION_ERROR');
+  });
   it('400 khi lời mời rỗng hoặc có trường lạ', async () => {
     const a = await app.inject({ method: 'POST', url: '/api/v1/invitations/extract', payload: { mode: 'simulated', invitationText: '' } });
     expect(a.statusCode).toBe(400);

@@ -8,6 +8,7 @@ Web tiếng Việt giúp sinh viên đối chiếu lời mời việc làm, tin 
 |---|---|
 | [Feature Spec luồng đầu tiên](.kiro/specs/viec-that-luong-dau/requirements.md) | Yêu cầu, thiết kế (schema, ví dụ JSON, mã lỗi, lịch sử, chế độ live) và kế hoạch của luồng nhập, xác nhận, đối chiếu. Đặt trong `.kiro/specs/` theo định dạng Spec của Kiro. Gồm [`requirements.md`](.kiro/specs/viec-that-luong-dau/requirements.md), [`design.md`](.kiro/specs/viec-that-luong-dau/design.md), [`tasks.md`](.kiro/specs/viec-that-luong-dau/tasks.md). |
 | [Dữ liệu demo](data/demo/README.md) | Bốn ca mô phỏng, mẫu TopCV và danh sách nguồn dữ liệu ngoài kèm quyền sử dụng. Nằm cạnh [`cases.json`](data/demo/cases.json). |
+| [Kiểm thử lời mời mới](data/evaluation/README.md) | 20 ca riêng để kiểm tra luật dự phòng trên cách viết và tình huống ngoài bốn ca demo. |
 
 ## Mục lục
 
@@ -19,12 +20,13 @@ Web tiếng Việt giúp sinh viên đối chiếu lời mời việc làm, tin 
 6. [Chạy trên máy](#6-chạy-trên-máy)
 7. [Kiểm tra dịch vụ ngoài (VT02, VT03)](#7-kiểm-tra-dịch-vụ-ngoài-vt02-vt03)
 8. [Bàn giao cho Kiro](#8-bàn-giao-cho-kiro)
+9. [Khai báo tài sản và AI (bản nháp VT18)](#9-khai-báo-tài-sản-và-ai-bản-nháp-vt18)
 
 ---
 
 ## 1. Trạng thái hiện tại
 
-Cập nhật ngày 21/11/2026.
+Cập nhật ngày 22/11/2026.
 
 **Đã làm và đã kiểm tra**
 - Hợp đồng API (VT04): kiểu TypeScript và JSON Schema trong `shared/`, ví dụ và mã lỗi trong `design.md`.
@@ -33,14 +35,15 @@ Cập nhật ngày 21/11/2026.
 - Bốn ca mô phỏng chạy đúng `expected` ở API. VT-DEMO-01, 02, 04 chạy hết luồng ở giao diện.
 - Lịch sử tra cứu bằng PostgreSQL: lưu theo thiết bị (cookie ẩn danh), xem lại, chọn và xóa từng mục, tự hết hạn sau 30 ngày, tối đa 100 bản mỗi thiết bị. Đã thử trên PostgreSQL 18 thật.
 - Chế độ live (mã VT07 đến VT11): AI đọc lời mời qua Bedrock, địa điểm qua Google Places, tin đăng từ dữ kiện người dùng nhập, hạ cấp có thông báo khi thiếu dịch vụ, giới hạn 30 yêu cầu mỗi phút mỗi IP.
-- Kiểm thử: API 62 test, web 12 test, typecheck và build đạt. Các test của AI và Places dùng bản giả lập.
+- Kiểm thử local: API 90 test, web 18 test, typecheck và build đạt. Các test của AI và Places dùng bản giả lập.
+- Caddy phục vụ được bản build và chuyển tiếp API ở local. k6 đo đủ 600 luồng mô phỏng với 0 lỗi HTTP. Xem [triển khai](deploy/README.md) và [kiểm thử tải](#kiểm-thử-tải-local-vt14).
 
 **Chưa làm hoặc chưa kiểm chứng**
-- VT02, VT03: chưa có bằng chứng về tài khoản AWS, quyền Bedrock, EC2/HTTPS, Google Places và hạn mức. Cần người có tài khoản của đội. Xem [mục 7](#7-kiểm-tra-dịch-vụ-ngoài-vt02-vt03).
+- VT02, VT03: chưa có bằng chứng về quyền Bedrock, EC2/HTTPS và hạn mức AWS. Places trả `403 PERMISSION_DENIED`, tạm gác phần gọi thật. Xem [mục 7](#7-kiểm-tra-dịch-vụ-ngoài-vt02-vt03).
 - VT07, VT08: mã đã xong nhưng chưa gọi Bedrock và Places thật.
 - VT06, VT15: chưa thử trên Safari iPhone thật.
-- VT12 trở đi: chưa triển khai EC2, chưa đo k6, chưa làm hồ sơ nộp.
-- Chưa commit Git.
+- VT12, VT14: đã chuẩn bị cấu hình máy chủ và đo tải local. Còn triển khai EC2, đo trên bản chạy công khai và thu bằng chứng để hoàn thiện hồ sơ nộp.
+- Chưa commit các thay đổi ngày 22/11/2026. Git có 2 commit, mới nhất là `6a86e78`.
 
 | Mốc | Task | Trạng thái |
 |---|---|---|
@@ -48,7 +51,7 @@ Cập nhật ngày 21/11/2026.
 | 2. Kiểm tra máy và dịch vụ | VT02, VT03 | Máy phát triển xong. AWS và Google chờ nhóm. |
 | 3. Bản chạy đầu tiên trên máy | VT04 đến VT06 | Xong, trừ thử trên Safari iPhone. |
 | 4. Thay mô phỏng bằng xử lý thật | VT07 đến VT11 | Mã và test xong. Chờ Bedrock và Places thật. |
-| 5. Đưa lên mạng và kiểm tra | VT12 đến VT17 | Chưa bắt đầu. |
+| 5. Đưa lên mạng và kiểm tra | VT12 đến VT17 | Cấu hình Caddy và bài đo k6 đã chạy local. Còn EC2, HTTPS công khai và kiểm thử iPhone. |
 | 6. Nộp và duy trì | VT18 đến VT20 | Chưa bắt đầu. |
 
 ---
@@ -102,12 +105,12 @@ Nguồn: [Google Places](https://developers.google.com/maps/documentation/places
 |---|---|---|
 | Làm việc | Antigravity để trao đổi, VS Code để sửa mã, Git quản lý phiên bản, Kiro IDE triển khai theo đặc tả. | Đang dùng. |
 | Web | React + Vite + TypeScript. Kiểm tra trên Safari iPhone thật. | Đã làm. Chưa thử trên iPhone thật. |
-| API | Node.js + Fastify + TypeScript. JSON Schema kiểm tra dữ liệu. OpenAPI ghi cách gọi. | Đã làm. Chưa có OpenAPI, ví dụ nằm trong `design.md`. |
+| API | Node.js + Fastify + TypeScript. JSON Schema kiểm tra dữ liệu. OpenAPI ghi cách gọi. | Đã làm. OpenAPI 3.1 ở [`docs/openapi.json`](docs/openapi.json), sinh từ JSON Schema. Ví dụ ở [`docs/API-CONTRACT.md`](docs/API-CONTRACT.md). |
 | AI | AWS SDK cho JavaScript, Bedrock Converse. Mô hình trích nội dung có cấu trúc. Máy chủ kiểm tra đoạn trích. | Mã xong, chưa gọi thật. |
 | Địa điểm | Google Places Text Search (New), Google Maps URLs để mở bản đồ. Street View là phần bổ sung. Hạn mức Maps tính riêng với AWS Sandbox. | Mã xong, chưa có khóa. Nút mở bản đồ chạy. |
 | Dữ liệu | Bộ ca mô phỏng trong JSON. PostgreSQL cho lịch sử tra cứu. | Đã làm. PostgreSQL 18 chạy cục bộ, kiểm thử bằng PGlite. |
 | Triển khai | AWS EC2 Amazon Linux 2023, Caddy, systemd, HTTPS công khai. Nhật ký kỹ thuật không ghi nội dung lời mời. IAM role cho EC2 để gọi Bedrock. | Chưa làm. |
-| Kiểm thử | Vitest và kiểm thử API. k6 đo độ trễ và lỗi. Safari iPhone cho luồng thực tế. | Vitest xong. Chưa có k6 và iPhone. |
+| Kiểm thử | Vitest và kiểm thử API. k6 đo độ trễ và lỗi. Safari iPhone cho luồng thực tế. | Vitest và k6 đã chạy local. Còn iPhone thật. |
 
 Dùng ML hoặc DL tự huấn luyện chỉ khi có bài toán riêng và bộ nhãn phù hợp. Bản thi chọn mô hình ngôn ngữ đã huấn luyện sẵn vì giá trị chính nằm ở hiểu lời mời, trích đoạn và đề xuất xác minh. Chuẩn hóa địa chỉ, so hạn nộp và kiểm tra nguồn dùng logic TypeScript có thể kiểm chứng. Tài liệu: [Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/structured-output.html) · [Maps URLs](https://developers.google.com/maps/documentation/urls/get-started)
 
@@ -125,7 +128,7 @@ Trước khi triển khai, xác minh tên miền hoặc địa chỉ ổn địn
 
 ### API
 
-Ví dụ JSON đầy đủ, giới hạn đầu vào và mã lỗi nằm trong [`design.md`](.kiro/specs/viec-that-luong-dau/design.md). Schema nguồn: `shared/contract.ts` và `shared/schemas.ts`.
+Hợp đồng API kèm ví dụ VT-DEMO-01 lấy từ phản hồi thật, quy tắc trạng thái và mã lỗi: [`docs/API-CONTRACT.md`](docs/API-CONTRACT.md). Mô tả máy đọc được: [`docs/openapi.json`](docs/openapi.json). Thiết kế: [`design.md`](.kiro/specs/viec-that-luong-dau/design.md). Schema nguồn: `shared/contract.ts` và `shared/schemas.ts`.
 
 | Endpoint | Mục đích |
 |---|---|
@@ -163,7 +166,7 @@ Phân vai đề xuất: **A** dữ liệu và AI, **B** web và AWS, **C** kiể
 |---|---|---|---|
 | [x] VT01 — Chuẩn bị ca demo và bộ ca đối chứng | A + C | — | Một ca demo và ba ca đối chứng bằng dữ liệu mô phỏng, kèm kết quả mong đợi và mẫu TopCV. Xem [dữ liệu demo](data/demo/README.md). |
 | [ ] VT02 — Kiểm tra AWS | B | — | Xác nhận EC2 AL2023, HTTPS, quyền Bedrock, hạn mức và thời hạn đến hết 11/12. *Chưa có bằng chứng. Công cụ kiểm tra đã sẵn, xem [mục 7](#7-kiểm-tra-dịch-vụ-ngoài-vt02-vt03).* |
-| [ ] VT03 — Kiểm tra nguồn Maps và tuyển dụng | A + B | — | Có kết quả Places thử với một địa chỉ, hoặc ghi rõ nếu chưa có key. Rà quyền sử dụng và chọn nguồn tin đăng. *Chưa có khóa Places. Đã chọn tạm nguồn tin đăng là dữ kiện người dùng nhập, nhóm cần xác nhận.* |
+| [ ] VT03 — Kiểm tra nguồn Maps và tuyển dụng | A + B | — | Có kết quả Places thử với một địa chỉ, hoặc ghi rõ trạng thái truy cập. Rà quyền sử dụng và chọn nguồn tin đăng. *Places trả 403 và được hoãn. Đang dùng dữ kiện người dùng nhập, nhóm cần xác nhận.* |
 | [x] VT04 — Chốt schema vào/ra | A + B | VT01 | Có ví dụ JSON, mã lỗi và trạng thái riêng cho địa điểm, tin đăng, người liên hệ và lời yêu cầu. |
 
 ### 2. Xây luồng chính với Kiro · 23–28/11
@@ -173,18 +176,18 @@ Phân vai đề xuất: **A** dữ liệu và AI, **B** web và AWS, **C** kiể
 | [x] VT05 — Tạo khung React và Fastify | B | VT04 | Web, API và health endpoint chạy trên máy phát triển. Có cấu hình mẫu. |
 | [ ] VT06 — Tạo form lời mời và màn hình xác nhận | B | VT05 | Người dùng dán văn bản, link và địa chỉ, sửa được dữ kiện trước khi tra cứu trên Safari iPhone. *Chạy và test được trên máy phát triển, chưa thử trên iPhone thật.* |
 | [ ] VT07 — AI trích thông tin lời mời | A | VT02, VT04, VT05 | Mô hình trả công ty, vị trí, địa chỉ, hành động được yêu cầu và trích đoạn có thật. *Mã và test xong với bản giả lập. Chờ VT02 để gọi Bedrock thật.* |
-| [ ] VT08 — Đối chiếu địa điểm | B | VT03, VT05 | Tìm theo tên và địa chỉ. Phân biệt khớp công ty, chỉ thấy địa điểm, hoặc chưa kiểm tra. Hiện nút bản đồ. *Mã và test xong với bản giả lập. Chờ khóa Places.* |
+| [ ] VT08 — Đối chiếu địa điểm | B | VT03, VT05 | Tìm theo tên và địa chỉ. Phân biệt khớp công ty, chỉ thấy địa điểm, hoặc chưa kiểm tra. Hiện nút bản đồ. *Mã và test xong với bản giả lập. Dùng nút mở bản đồ trong thời gian hoãn xác minh Places.* |
 | [ ] VT09 — Đối chiếu tin đăng | A | VT03–VT05 | Đọc dữ kiện được phép dùng, so ngày và trạng thái. Giữ nguồn kèm kết quả. Xử lý link đóng, cần đăng nhập hoặc thiếu hạn nộp. *Mã và test xong với dữ kiện người dùng nhập. Chờ nhóm chốt VT03.* |
 | [ ] VT10 — Giải thích và gợi ý câu hỏi | A + B | VT07–VT09 | Hiện từng căn cứ và một câu hỏi xác minh theo dữ kiện thiếu. Kiểm tra đoạn trích và nguồn liên hệ trước khi trả cho web. *Mã và test xong. Chờ VT07–VT09 chạy thật.* |
 | [ ] VT11 — Tích hợp kết quả vào web | B + C | VT06, VT10 | Trọn luồng từ nhập lời mời đến mở bản đồ, xem nguồn và sao chép câu hỏi. Nhận biết rõ trạng thái đang xử lý và lỗi nguồn. *Mã và test xong. Chờ dịch vụ thật và thử iPhone.* |
-| [ ] VT12 — Triển khai EC2 qua HTTPS | B | VT02, VT11 | Đúng link dự kiến nộp mở được qua mạng ngoài nhóm và phân tích một lời mời mới bằng AI. |
+| [ ] VT12 — Triển khai EC2 qua HTTPS | B | VT02, VT11 | Đúng link dự kiến nộp mở được qua mạng ngoài nhóm và phân tích một lời mời mới bằng AI. *Đã kiểm tra web và proxy Caddy ở local.* |
 
 ### 3. Kiểm thử và chốt bài · 28/11–02/12
 
 | Task | Vai trò | Sau | Tiêu chí hoàn thành |
 |---|---|---|---|
-| [ ] VT13 — Kiểm thử logic và API | A + B | VT11 | Chạy ca tin hết hạn, địa chỉ dùng chung, thiếu dữ kiện, lỗi Maps/AI, và kiểm tra trích dẫn. *Đã có 74 test tự động (API 62, web 12) phủ các ca này với dịch vụ giả lập. Chưa chạy với dịch vụ thật.* |
-| [ ] VT14 — Đo API bằng k6 | B | VT11 | Đo p95 và tỷ lệ lỗi ở môi trường thử. Tạo tải với dịch vụ ngoài giả lập, đo vài yêu cầu thật trong hạn mức. |
+| [ ] VT13 — Kiểm thử logic và API | A + B | VT11 | Chạy ca tin hết hạn, địa chỉ dùng chung, thiếu dữ kiện, lỗi Maps/AI, và kiểm tra trích dẫn. *108 test tự động đạt (API 90, web 18), gồm 20 ca lời mời mới. Còn kiểm thử dịch vụ thật.* |
+| [ ] VT14 — Đo API bằng k6 | B | VT11 | Đo p95 và tỷ lệ lỗi ở môi trường thử. *Đã đo local với dữ liệu mô phỏng. Còn đo trên bản triển khai và lấy mẫu gọi AI thật trong hạn mức.* |
 | [ ] VT15 — Thử người dùng trên iPhone | C | VT12, VT13 | So điểm chọn đúng bước xác minh và thời gian thao tác với tra cứu thủ công. Ghi số lượt và lỗi thực tế. |
 | [ ] VT16 — Bổ sung Street View hoặc đọc ảnh nếu còn thời gian | B + C | VT12 | Tính năng bổ sung chạy trên máy thật. Street View có nguồn, ngày chụp nếu có và phương án chỉ hiện bản đồ khi thiếu ảnh. |
 | [ ] VT17 — Chốt bản nộp | Cả nhóm | VT13–VT15 | Sửa lỗi luồng chính, thử lại link ngoài mạng nhóm và ghi phiên bản Git tương ứng với bản chạy. |
@@ -299,8 +302,9 @@ npm run dev:api
 
 ```powershell
 npm run typecheck
-npm test            # API 62 test, web 12 test
+npm test            # API 90 test, web 18 test
 npm run build
+npm run openapi -w apps/api          # sinh lại docs/openapi.json sau khi đổi shared/schemas.ts
 npm run check:services -w apps/api   # gọi thử Bedrock và Places nếu đã cấu hình
 ```
 
@@ -309,9 +313,13 @@ npm run check:services -w apps/api   # gọi thử Bedrock và Places nếu đã
 | Thư mục | Nội dung |
 |---|---|
 | `shared/` | Kiểu TypeScript và JSON Schema của API. |
-| `apps/api/` | Fastify. `extract.ts` và `verify.ts` (luồng), `ai.ts` (Bedrock), `places.ts` (Google Places), `history.ts` và `db.ts` (PostgreSQL), `migrations/` (SQL). |
+| `apps/api/` | Fastify. `extract.ts` và `verify.ts` (luồng), `requirements.ts` (luật nhận diện yêu cầu), `ai.ts` (Bedrock), `places.ts` (Google Places), `history.ts` và `db.ts` (PostgreSQL), `openapi.ts`, `migrations/` (SQL). |
 | `apps/web/` | React + Vite. |
 | `data/demo/` | Bốn ca mô phỏng. `expected` chỉ dùng trong kiểm thử, không đi vào code xử lý hay gửi cho AI. |
+| `data/evaluation/` | 20 lời mời ngoài bốn ca demo để kiểm thử luật dự phòng. |
+| `docs/` | Hợp đồng API và OpenAPI. |
+| `deploy/` | Caddyfile, unit systemd và hướng dẫn triển khai EC2. |
+| `tests/load/` | Kịch bản k6 (VT14). |
 | `.kiro/specs/` | Feature Spec của luồng đầu tiên. |
 
 Quy ước khi làm việc: bản thi không ghi nội dung lời mời vào nhật ký máy chủ. Trên Windows PowerShell 5.1, `Set-Content -Encoding UTF8` thêm BOM làm hỏng JSON, dùng `[IO.File]::WriteAllText` với `UTF8Encoding($false)`.
@@ -360,7 +368,7 @@ Máy này chưa có thông tin xác thực AWS. Việc cần làm, theo thứ t�
 
 ### Google Places và nguồn tin (VT03)
 
-**Places (chưa có).** Cần khóa riêng, không thuộc AWS Sandbox.
+**Tạm hoãn gọi Places thật.** Google Cloud hiển thị Places API (New) đã bật, tài khoản thanh toán đang hoạt động và khóa đã giới hạn đúng API. Gọi từ máy phát triển vẫn trả `403 PERMISSION_DENIED`.
 
 1. Google Cloud: bật **Places API (New)** và thanh toán, đặt **ngân sách và cảnh báo**.
 2. Tạo API key, giới hạn chỉ cho Places API (New), và theo IP máy chủ khi đã có IP cố định.
@@ -380,9 +388,32 @@ Nhóm cần xác nhận quyết định này. Muốn có nguồn tin tự độn
 
 | Mục cần ghi | Giá trị |
 |---|---|
-| Khóa Places và ngân sách | _chưa có_ |
-| Kết quả `check:services` | _chưa có_ |
+| Khóa Places và ngân sách | Đã kiểm tra quyền theo API và IP. Chưa xác nhận ngân sách hoặc hạn mức. |
+| Kết quả `check:services` | `403 PERMISSION_DENIED`. Tạm hoãn điều tra phía Google Cloud. |
 | Nguồn tin tự động được phép | _chưa chọn_ (đang dùng dữ kiện người dùng nhập) |
+
+### Kiểm thử tải local (VT14)
+
+Chạy API kiểm thử ở một terminal và chạy k6 ở terminal khác, đều tại thư mục gốc.
+
+```powershell
+npm run load:server -w apps/api
+```
+
+```powershell
+k6 run tests/load/invitations.js
+```
+
+Kịch bản luân phiên bốn ca mô phỏng ở mức 20 luồng/giây trong 30 giây. Mỗi luồng gọi `extract` rồi `verify`, kiểm tra bốn trạng thái và đoạn trích. API thử chạy trên `127.0.0.1:3900`, với giới hạn tần suất tắt và không bật lưu lịch sử. Các nguồn trong ca đều là dữ liệu giả lập, nên phép đo chỉ phản ánh thời gian xử lý local.
+
+| Chỉ số đo bằng k6 v2.4.0 | Kết quả |
+| --- | --- |
+| Luồng hoàn tất / yêu cầu HTTP | 600 / 1.200 |
+| p95 `extract` / p95 `verify` | 1,52 ms / 1,30 ms |
+| Lỗi HTTP / lỗi luồng | 0% / 0% |
+| Luồng bỏ lỡ | 0 |
+
+p95 là mốc thời gian mà 95% yêu cầu hoàn thành trong hoặc dưới mốc đó. Ngưỡng local của bài đo là p95 dưới 250 ms cho mỗi bước, lỗi dưới 1% và không bỏ lỡ luồng.
 
 ---
 
@@ -407,3 +438,53 @@ Mở thư mục gốc `MoMo tech` trong Kiro IDE để agent thấy tài liệu 
 - **VT03:** ghi cách truy cập nguồn tin được phép, các trường được dùng và trạng thái Google Places. Giữ phương án mở bản đồ và hiện "Chưa đối chiếu tự động" khi thiếu quyền.
 - **VT12–VT17:** triển khai, thử trên iPhone qua mạng ngoài nhóm và chốt bản nộp.
 - **VT18–VT20:** bàn giao đường dẫn HTTPS, mã phiên bản Git, kết quả kiểm thử, README khai báo nguồn dữ liệu và AI, ZIP, PDF hướng dẫn, slide và video. Hạn nộp **23:59:59 ngày 03/12/2026 GMT+7**. Duy trì bản nộp đến hết **11/12/2026**.
+
+---
+
+## 9. Khai báo tài sản và AI (bản nháp VT18)
+
+Bản nháp này ghi theo những gì có trong mã ngày 22/11/2026. Ô ghi *cần nhóm xác nhận* phải được điền trước khi đóng ZIP.
+
+### AI trong sản phẩm
+
+| Thành phần | Vai trò | Giới hạn |
+|---|---|---|
+| AWS Bedrock Converse (`apps/api/src/ai.ts`) | Đọc lời mời, trích công ty, vị trí, địa chỉ và yêu cầu kèm đoạn trích nguyên văn. | Mô hình: *cần nhóm xác nhận* (`BEDROCK_MODEL_ID`). Nhiệt độ 0, công cụ bắt buộc. Chỉ gửi văn bản lời mời. Máy chủ loại mục không có đoạn trích trong lời mời. AI không quyết định trạng thái. Trạng thái và câu hỏi gợi ý do luật TypeScript sinh ra. |
+| Luật cố định (`apps/api/src/requirements.ts`) | Luôn chạy để không bỏ sót yêu cầu đóng phí, gửi giấy tờ. Là phương án dự phòng khi AI chưa cấu hình hoặc lỗi. | Không dùng mô hình. |
+
+### AI dùng khi phát triển
+
+| Công cụ | Dùng cho |
+|---|---|
+| Kiro IDE | Viết và sửa mã, test, tài liệu theo Feature Spec trong `.kiro/specs/`. |
+| Antigravity | Trao đổi và rà soát. |
+| *Công cụ khác, cần nhóm xác nhận* | |
+
+### Dữ liệu
+
+| Nguồn | Cách dùng |
+|---|---|
+| `data/demo/cases.json` | Bốn ca do nhóm tự tạo. Tên công ty, địa chỉ, tin đăng và bản đồ là mô phỏng, có nhãn "Dữ liệu mô phỏng". |
+| `data/evaluation/novel-invitations.json` | 20 lời mời tự tạo để kiểm thử luật dự phòng. |
+| Tin TopCV `j1095867` | Chỉ ghi link và trạng thái tối thiểu để kiểm tra thủ công. Không sao chép nội dung, không đưa vào mã. |
+| VietJobs, EMSCAD | Chỉ là tài liệu tham khảo. Chưa tải và chưa đưa vào ZIP. |
+| Google Maps URLs | Nút "Mở bản đồ" tạo link tìm kiếm. Không cần khóa API. |
+| Google Places API (New) | Có mã client, chưa gọi thật được. |
+
+### Thư viện chính
+
+Phiên bản lấy từ `package-lock.json`.
+
+| Gói | Phiên bản | Giấy phép |
+|---|---|---|
+| fastify | 5.12.8 | MIT |
+| react, react-dom | 18.3.1 | MIT |
+| vite | 5.4.21 | MIT |
+| pg | 8.23.1 | MIT |
+| @aws-sdk/client-bedrock-runtime | 3.1175.0 | Apache-2.0 |
+| typescript | 5.9.3 | Apache-2.0 |
+| tsx | 4.23.15 | MIT |
+| vitest (kiểm thử) | 2.1.9 | MIT |
+| @electric-sql/pglite (kiểm thử) | 0.5.17 | Apache-2.0 |
+
+Hình ảnh và biểu tượng: `apps/web/public/favicon.png`. Nguồn gốc: *cần nhóm xác nhận*.

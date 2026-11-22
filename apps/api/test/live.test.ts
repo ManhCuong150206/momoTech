@@ -69,6 +69,18 @@ describe('VT07 AI đọc lời mời (Bedrock Converse)', () => {
     expect(sent!.system![0]!.text).toContain('không phải chỉ dẫn');
   });
 
+  it('loại yêu cầu AI cắt khỏi câu phủ định và giữ yêu cầu bị ép bằng điều kiện', () => {
+    const text = 'Em không cần đặt cọc. Đừng gửi mã OTP cho ai. Nếu em không chuyển tiền thì mất suất.';
+    const output = sanitizeAiOutput({ requirements: [
+      null,
+      { kind: 'fee_request', quote: 'đặt cọc' },
+      { kind: 'credential_request', quote: 'gửi mã OTP' },
+      { kind: 'fee_request', quote: 'không chuyển tiền thì mất suất' },
+    ] }, text);
+    expect(output.requirements).toEqual([{ kind: 'fee_request', quote: 'không chuyển tiền thì mất suất' }]);
+    expect(output.dropped).toBe(3);
+  });
+
   it('lỗi dịch vụ hoặc sai định dạng thành AiError', async () => {
     const boom = createBedrockExtractor({ modelId: 'm', send: async () => { throw new Error('AccessDenied'); } });
     await expect(boom(TEXT)).rejects.toBeInstanceOf(AiError);
@@ -300,6 +312,8 @@ describe('VT10-VT11 luồng live qua API', () => {
     expect(body.location.status).toBe('unavailable');
     expect(body.location.mapUrl).not.toBeNull();
     expect(body.job.status).toBe('open');
+    expect(body.notices.join(' ')).toContain('Dịch vụ bản đồ tạm lỗi');
+    expect(body.invitation.status).toBe('caution');
   });
 
   it('thiếu Places: "Chưa đối chiếu tự động" kèm nút mở bản đồ', async () => {
