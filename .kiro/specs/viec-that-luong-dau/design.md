@@ -244,11 +244,13 @@ Ví dụ danh sách:
 
 ## Giao diện (VT06)
 
-Ba bước trên một trang, tối ưu cho điện thoại: chữ nhập 16px để Safari iOS không tự phóng to, nút cao tối thiểu 44px, bố cục một cột.
+Ba bước trên một trang, tối ưu cho điện thoại: chữ nhập 16px để Safari iOS không tự phóng to, nút cao tối thiểu 44px. Điện thoại dùng một cột, nút chính rộng hết khung. Desktop giữ form rộng 640px, phần kết quả rộng tới 1040px.
 
-1. **Nhập.** Chọn ca mẫu (có nhãn "Dữ liệu mô phỏng") hoặc dán lời mời, link và địa chỉ.
+1. **Nhập.** Ô dán lời mời và nút Phân tích lời mời nằm đầu form. Link, địa chỉ và dữ kiện tin đăng nằm ở nhóm "Thêm thông tin". Nút "Thử với dữ liệu mẫu" mở danh sách ca mẫu có tên dễ hiểu và nhãn "Dữ liệu mô phỏng". Thử mẫu không làm mất lời mời đã gõ: có nút khôi phục. Gửi trống thì báo lỗi ngay dưới ô nhập và đưa con trỏ về ô đó.
 2. **Xác nhận.** Sửa công ty, vị trí, địa chỉ. Bỏ chọn yêu cầu không đúng. Mỗi yêu cầu hiện đoạn trích.
-3. **Kết quả.** Bốn thẻ: Tin đăng, Địa điểm (kèm nút Mở bản đồ), Lời mời, Người liên hệ. Thẻ Bước tiếp theo có nút Sao chép câu hỏi, dùng `navigator.clipboard` và có đường dự phòng cho Safari cũ.
+3. **Kết quả.** Khối "Việc nên làm ngay" đứng đầu: bước tiếp theo, câu hỏi gợi ý và nút Sao chép câu hỏi (dùng `navigator.clipboard`, có đường dự phòng cho Safari cũ). Viền đỏ khi lời mời `caution`, hổ phách khi `needs_verification`. Bên dưới là bốn thẻ căn cứ: Tin đăng, Địa điểm (kèm nút Mở bản đồ), Lời mời, Người liên hệ. Desktop xếp bốn thẻ thành lưới 2 × 2.
+
+Khi chuyển bước, điểm tập trung chuyển tới tiêu đề bước mới. "Kiểm tra lời mời khác" xóa toàn bộ dữ liệu của lượt trước.
 
 Khi lịch sử bật, thanh tab Kiểm tra / Lịch sử xuất hiện. Tab Lịch sử có danh sách chọn nhiều, nút Xóa đã chọn (có hộp xác nhận) và màn xem lại một mục.
 
@@ -257,5 +259,5 @@ Trạng thái xử lý: nút đổi chữ và bị khóa khi đang gọi API. L�
 ## Chiến lược kiểm thử
 
 - API (`apps/api/test`): chạy cả bốn ca qua `extract` rồi `verify`, so `jobStatus`, `locationStatus`, `contactStatus`, `invitationStatus` và `evidenceQuotes` với `expected`. Phản hồi được kiểm tra bằng Ajv theo schema. Có ca lỗi 400 (kể cả lời mời chỉ có khoảng trắng), 404, 422, 429, 503. `docs/openapi.json` được so với schema hiện tại và mọi đường dẫn trong đó phải có trên API.
-- Web (`apps/web/test`): dựng giao diện với `fetch` nối vào API NestJS thật (`apps/api/test/harness.ts`, nghe trên 127.0.0.1). Chạy VT-DEMO-01 đến bước sao chép, VT-DEMO-02, VT-DEMO-04, gửi rỗng và lỗi mạng.
+- Web (`apps/web/test`): dựng giao diện với `fetch` nối vào API NestJS thật (`apps/api/test/harness.ts`, nghe trên 127.0.0.1). Chạy VT-DEMO-01 đến bước sao chép, VT-DEMO-02, VT-DEMO-04, gửi rỗng và lỗi mạng. Kiểm tra thứ tự trên trang (ô nhập và nút chính trước ca mẫu, "Việc nên làm ngay" trước bốn thẻ), giữ bản nháp khi thử mẫu, xóa dữ liệu khi bắt đầu lượt mới và điểm tập trung khi chuyển bước.
 - Câu hướng dẫn so theo mẫu và từ khóa, không so từng chữ với `expected`.

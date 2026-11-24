@@ -44,7 +44,7 @@ Ngoài phạm vi của ba task trên: triển khai AWS (VT12), k6, Street View, 
 
 ## Lịch sử tra cứu (mở rộng, PostgreSQL)
 
-**R13. Lưu có chủ đích.** `verify` nhận `save: true` thì lưu lời mời, dữ kiện đã xác nhận và kết quả vào PostgreSQL, trả `historyId`. Mặc định không lưu. Web có hộp chọn "Lưu vào lịch sử" (mặc định bật) nói rõ gồm cả nội dung lời mời và thời hạn tự xóa. Server tự tính lại kết quả rồi mới lưu, không nhận kết quả từ client.
+**R13. Lưu có chủ đích.** `verify` nhận `save: true` thì lưu lời mời, dữ kiện đã xác nhận và kết quả vào PostgreSQL, trả `historyId`. Mặc định không lưu. Web có hộp chọn "Lưu vào lịch sử" (mặc định tắt). Ngay dưới hộp chọn ghi rõ có lưu nội dung lời mời và thời hạn tự xóa. Server tự tính lại kết quả rồi mới lưu, không nhận kết quả từ client.
 
 **R14. Xem lại.** Người dùng xem danh sách (mới nhất trước) với tên công ty và vị trí, thời điểm, trạng thái lời mời, tin đăng, địa điểm. Mở một mục thì thấy lại lời mời đã nhập và đủ kết quả, kể cả câu hỏi để sao chép.
 

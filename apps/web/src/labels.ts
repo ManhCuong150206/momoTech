@@ -44,6 +44,14 @@ export const REQUIREMENT_LABEL: Record<RequirementKind, string> = {
 
 export type Tone = 'bad' | 'warn' | 'ok' | 'neutral';
 
+/** Tên dễ hiểu cho nút thử dữ liệu mẫu. Thiếu thì dùng `title` trong cases.json. */
+export const SAMPLE_LABEL: Record<string, string> = {
+  'VT-DEMO-01': 'Lời mời yêu cầu đóng phí',
+  'VT-DEMO-02': 'Lời mời có tin còn mở và địa chỉ khớp',
+  'VT-DEMO-03': 'Hẹn phỏng vấn ở văn phòng dùng chung',
+  'VT-DEMO-04': 'Link cần đăng nhập, chưa có địa chỉ',
+};
+
 export const JOB_TONE: Record<JobStatus, Tone> = {
   open: 'ok',
   expired: 'bad',

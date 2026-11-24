@@ -59,71 +59,16 @@ export default function ResultView({ result, children }: { result: VerifyRespons
   return (
     <section aria-label="Kết quả đối chiếu">
       {result.simulated && <SimBadge />}
-      {result.notices.map((n) => (
-        <p key={n} className="note">
-          {n}
-        </p>
-      ))}
-      {children}
 
-      <article className="card" aria-label="Tin đăng">
-        <h3>Tin đăng</h3>
-        <StatusPill tone={JOB_TONE[result.job.status]}>{JOB_LABEL[result.job.status]}</StatusPill>
-        <p>{result.job.basis}</p>
-        <p className="meta">
-          Nguồn: {result.job.source.label ?? 'chưa có'}
-          {result.job.checkedOn && ` · kiểm tra ngày ${result.job.checkedOn}`}
-        </p>
-        {referenceUrl && (
-          <a href={referenceUrl} target="_blank" rel="noopener noreferrer" className="btn">
-            Mở tin tham chiếu
-          </a>
-        )}
-      </article>
-
-      <article className="card" aria-label="Địa điểm">
-        <h3>Địa điểm</h3>
-        <StatusPill tone={LOCATION_TONE[result.location.status]}>{LOCATION_LABEL[result.location.status]}</StatusPill>
-        <p>{result.location.basis}</p>
-        <p className="meta">
-          Nguồn: {result.location.source.label ?? 'chưa có'}
-          {result.location.checkedOn && ` · kiểm tra ngày ${result.location.checkedOn}`}
-        </p>
-        {result.location.mapUrl && (
-          <a href={result.location.mapUrl} target="_blank" rel="noopener noreferrer" className="btn">
-            Mở bản đồ
-          </a>
-        )}
-      </article>
-
-      <article className="card" aria-label="Lời mời">
-        <h3>Lời mời</h3>
-        <StatusPill tone={INVITATION_TONE[result.invitation.status]}>
-          {INVITATION_LABEL[result.invitation.status]}
-        </StatusPill>
-        <p>{result.invitation.basis}</p>
-        <ul className="quotes">
-          {result.invitation.requirements.map((r) => (
-            <li key={`${r.kind}-${r.quote}`}>
-              <strong>{REQUIREMENT_LABEL[r.kind]}</strong>
-              <q>{r.quote}</q>
-            </li>
-          ))}
-        </ul>
-      </article>
-
-      <article className="card" aria-label="Người liên hệ">
-        <h3>Người liên hệ</h3>
-        <StatusPill tone="neutral">{CONTACT_LABEL[result.contact.status]}</StatusPill>
-        <p>{result.contact.basis}</p>
-      </article>
-
-      <article className="card guidance" aria-label="Bước tiếp theo">
-        <h3>Bước tiếp theo</h3>
-        <p>{result.guidance.nextStep}</p>
+      <article
+        className={`card action action-${INVITATION_TONE[result.invitation.status]}`}
+        aria-label="Việc nên làm ngay"
+      >
+        <h3>Việc nên làm ngay</h3>
+        <p className="action-step">{result.guidance.nextStep}</p>
         <p className="meta">Câu hỏi gợi ý để gửi cho nhà tuyển dụng:</p>
         <blockquote data-testid="suggested-question">{result.guidance.suggestedQuestion}</blockquote>
-        <button type="button" className="primary" onClick={onCopy}>
+        <button type="button" className="primary block" onClick={onCopy}>
           Sao chép câu hỏi
         </button>
         <span role="status" className="copied">
@@ -131,6 +76,68 @@ export default function ResultView({ result, children }: { result: VerifyRespons
           {copied === 'fail' && 'Không sao chép được. Hãy chọn và sao chép thủ công.'}
         </span>
       </article>
+
+      {children}
+      {result.notices.map((n) => (
+        <p key={n} className="note">
+          {n}
+        </p>
+      ))}
+
+      <h3 className="section-title">Căn cứ từng phần</h3>
+      <div className="result-grid">
+        <article className="card" aria-label="Tin đăng">
+          <h3>Tin đăng</h3>
+          <StatusPill tone={JOB_TONE[result.job.status]}>{JOB_LABEL[result.job.status]}</StatusPill>
+          <p>{result.job.basis}</p>
+          <p className="meta">
+            Nguồn: {result.job.source.label ?? 'chưa có'}
+            {result.job.checkedOn && ` · kiểm tra ngày ${result.job.checkedOn}`}
+          </p>
+          {referenceUrl && (
+            <a href={referenceUrl} target="_blank" rel="noopener noreferrer" className="btn">
+              Mở tin tham chiếu
+            </a>
+          )}
+        </article>
+
+        <article className="card" aria-label="Địa điểm">
+          <h3>Địa điểm</h3>
+          <StatusPill tone={LOCATION_TONE[result.location.status]}>{LOCATION_LABEL[result.location.status]}</StatusPill>
+          <p>{result.location.basis}</p>
+          <p className="meta">
+            Nguồn: {result.location.source.label ?? 'chưa có'}
+            {result.location.checkedOn && ` · kiểm tra ngày ${result.location.checkedOn}`}
+          </p>
+          {result.location.mapUrl && (
+            <a href={result.location.mapUrl} target="_blank" rel="noopener noreferrer" className="btn">
+              Mở bản đồ
+            </a>
+          )}
+        </article>
+
+        <article className="card" aria-label="Lời mời">
+          <h3>Lời mời</h3>
+          <StatusPill tone={INVITATION_TONE[result.invitation.status]}>
+            {INVITATION_LABEL[result.invitation.status]}
+          </StatusPill>
+          <p>{result.invitation.basis}</p>
+          <ul className="quotes">
+            {result.invitation.requirements.map((r) => (
+              <li key={`${r.kind}-${r.quote}`}>
+                <strong>{REQUIREMENT_LABEL[r.kind]}</strong>
+                <q>{r.quote}</q>
+              </li>
+            ))}
+          </ul>
+        </article>
+
+        <article className="card" aria-label="Người liên hệ">
+          <h3>Người liên hệ</h3>
+          <StatusPill tone="neutral">{CONTACT_LABEL[result.contact.status]}</StatusPill>
+          <p>{result.contact.basis}</p>
+        </article>
+      </div>
     </section>
   );
 }

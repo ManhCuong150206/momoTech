@@ -13,8 +13,10 @@ let cookie = '';
 beforeAll(async () => {
   db = await createTestDb();
   api = buildApp({ db, historyTtlDays: 30 });
+  await api.ready();
 });
 afterAll(async () => {
+  await api.close();
   await db.close();
 });
 
@@ -46,12 +48,16 @@ afterEach(() => {
 });
 
 async function runCase(user: ReturnType<typeof userEvent.setup>, id: string, opts?: { save?: boolean }) {
+  await user.click(await screen.findByRole('button', { name: 'Thử với dữ liệu mẫu' }));
   await user.click(await screen.findByRole('button', { name: new RegExp(id) }));
   await user.click(screen.getByRole('button', { name: 'Phân tích lời mời' }));
   const form = await screen.findByRole('form', { name: 'Xác nhận dữ kiện' });
   const saveBox = within(form).getByRole('checkbox', { name: /Lưu vào lịch sử/ }) as HTMLInputElement;
-  expect(saveBox.checked).toBe(true);
-  if (opts?.save === false) await user.click(saveBox);
+  // Mặc định không lưu. Người dùng tự bật.
+  expect(saveBox.checked).toBe(false);
+  expect(saveBox.getAttribute('aria-describedby')).toBe('save-hint');
+  expect(within(form).getByText(/Có lưu nội dung lời mời trong 30 ngày/)).toBeTruthy();
+  if (opts?.save !== false) await user.click(saveBox);
   await user.click(within(form).getByRole('button', { name: 'Đối chiếu' }));
   await screen.findByRole('article', { name: 'Tin đăng' });
 }

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../src/App';
@@ -7,6 +7,9 @@ import { buildApp } from '../../api/test/harness';
 
 // fetch của trình duyệt được nối vào API thật (Fastify inject), dùng dữ liệu cases.json.
 const api = buildApp();
+// Khởi động API trước khi render để lần tải ca mẫu đầu tiên không bị chậm khi máy bận.
+beforeAll(() => api.ready());
+afterAll(() => api.close());
 
 beforeEach(() => {
   vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
@@ -25,6 +28,7 @@ afterEach(() => {
 });
 
 async function pickSample(user: ReturnType<typeof userEvent.setup>, id: string) {
+  await user.click(await screen.findByRole('button', { name: 'Thử với dữ liệu mẫu' }));
   await user.click(await screen.findByRole('button', { name: new RegExp(id) }));
 }
 
@@ -63,6 +67,69 @@ describe('luồng VT-DEMO-01', () => {
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
     expect(writeText.mock.calls[0]![0]).toContain('SG-101');
     expect(await screen.findByText('Đã sao chép')).toBeTruthy();
+  });
+
+  it('việc nên làm ngay đứng trước bốn thẻ căn cứ, có bước tạm dừng đóng phí', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await pickSample(user, 'VT-DEMO-01');
+    await user.click(screen.getByRole('button', { name: 'Phân tích lời mời' }));
+    await user.click(await screen.findByRole('button', { name: 'Đối chiếu' }));
+
+    const action = await screen.findByRole('article', { name: 'Việc nên làm ngay' });
+    expect(action.textContent).toContain('Tạm dừng đóng phí');
+    expect(within(action).getByRole('button', { name: 'Sao chép câu hỏi' })).toBeTruthy();
+    expect(action.className).toContain('action-bad');
+    for (const name of ['Tin đăng', 'Địa điểm', 'Lời mời', 'Người liên hệ']) {
+      const card = screen.getByRole('article', { name });
+      // DOCUMENT_POSITION_FOLLOWING: thẻ căn cứ nằm sau khối việc cần làm.
+      expect(action.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
+    // Điểm tập trung chuyển tới tiêu đề bước kết quả.
+    expect(document.activeElement?.textContent).toBe('3. Kết quả');
+  });
+});
+
+describe('màn nhập', () => {
+  it('ô dán lời mời và nút phân tích đứng trước dữ liệu mẫu, mẫu ẩn cho tới khi mở', async () => {
+    render(<App />);
+    const toggle = await screen.findByRole('button', { name: 'Thử với dữ liệu mẫu' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByRole('button', { name: /VT-DEMO-01/ })).toBeNull();
+    const text = screen.getByLabelText('Nội dung lời mời');
+    const submit = screen.getByRole('button', { name: 'Phân tích lời mời' });
+    expect(text.compareDocumentPosition(submit) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(submit.compareDocumentPosition(toggle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('thử mẫu không làm mất lời mời đã gõ, khôi phục được', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const text = screen.getByLabelText('Nội dung lời mời') as HTMLTextAreaElement;
+    await user.type(text, 'Lời mời của tôi');
+    await pickSample(user, 'VT-DEMO-02');
+    expect(text.value).toContain('Vườn Chữ');
+    expect(screen.getByRole('status').textContent).toContain('Lời mời có tin còn mở và địa chỉ khớp');
+    await user.click(screen.getByRole('button', { name: 'Khôi phục nội dung bạn đã nhập' }));
+    expect(text.value).toBe('Lời mời của tôi');
+    expect(screen.queryByText(/Đang dùng mẫu/)).toBeNull();
+  });
+
+  it('kiểm tra lời mời khác thì bắt đầu với form trống', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await pickSample(user, 'VT-DEMO-01');
+    await user.click(screen.getByRole('button', { name: 'Phân tích lời mời' }));
+    const form = await screen.findByRole('form', { name: 'Xác nhận dữ kiện' });
+    expect(document.activeElement?.textContent).toBe('2. Xem lại và sửa dữ kiện');
+    await user.click(within(form).getByRole('button', { name: 'Đối chiếu' }));
+    await user.click(await screen.findByRole('button', { name: 'Kiểm tra lời mời khác' }));
+
+    expect((screen.getByLabelText('Nội dung lời mời') as HTMLTextAreaElement).value).toBe('');
+    expect((screen.getByLabelText('Link tin tuyển dụng (nếu có)') as HTMLInputElement).value).toBe('');
+    expect((screen.getByLabelText('Địa chỉ hẹn (nếu có)') as HTMLInputElement).value).toBe('');
+    expect(screen.queryByText(/Đang dùng mẫu/)).toBeNull();
+    expect(document.activeElement?.textContent).toBe('1. Nhập lời mời');
   });
 
   it('bỏ chọn yêu cầu đóng phí thì kết quả lời mời đổi theo', async () => {
@@ -106,7 +173,13 @@ describe('ca khác và lỗi', () => {
     vi.stubGlobal('fetch', spy);
     render(<App />);
     await user.click(screen.getByRole('button', { name: 'Phân tích lời mời' }));
-    expect((await screen.findByRole('alert')).textContent).toContain('dán nội dung lời mời');
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('dán nội dung lời mời');
+    // Lỗi nằm sát ô nhập và điểm tập trung về đúng ô cần sửa.
+    const text = screen.getByLabelText('Nội dung lời mời');
+    expect(text.getAttribute('aria-invalid')).toBe('true');
+    expect(text.getAttribute('aria-describedby')).toBe(alert.id);
+    expect(document.activeElement).toBe(text);
     // Chỉ có lần gọi tải ca mẫu và healthz lúc mở trang, không có lần gọi extract.
     expect(spy.mock.calls.every((c) => /\/demo\/cases|\/healthz/.test(String(c[0])))).toBe(true);
   });

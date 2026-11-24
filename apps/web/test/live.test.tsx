@@ -18,7 +18,12 @@ const ai: AiExtractor = async () => ({
   dropped: 0,
 });
 
-function stubApi(api: ReturnType<typeof buildApp>) {
+const apps: Array<ReturnType<typeof buildApp>> = [];
+
+/** Nối fetch vào API NestJS thật. Đợi API khởi động xong trước khi render để lần tải đầu không bị chậm. */
+async function stubApi(api: ReturnType<typeof buildApp>) {
+  apps.push(api);
+  await api.ready();
   vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
     const res = await api.inject({
       method: (init?.method ?? 'GET') as 'GET' | 'POST',
@@ -31,9 +36,10 @@ function stubApi(api: ReturnType<typeof buildApp>) {
 }
 
 beforeEach(() => stubApi(buildApp({ ai })));
-afterEach(() => {
+afterEach(async () => {
   cleanup();
   vi.unstubAllGlobals();
+  await Promise.all(apps.splice(0).map((a) => a.close()));
 });
 
 describe('lời mời mới ở chế độ thật', () => {
@@ -107,7 +113,7 @@ async function fillAndExtract(user: ReturnType<typeof userEvent.setup>, text: st
 
 describe('đề xuất bổ sung: nhánh dự phòng trên giao diện', () => {
   it('giữ cảnh báo mã OTP khi thiếu link, địa chỉ và dịch vụ AI', async () => {
-    stubApi(buildApp());
+    await stubApi(buildApp());
     const user = userEvent.setup();
     const form = await fillAndExtract(user, 'Để xác nhận lịch, em gửi mã OTP vừa nhận nhé.');
     expect(within(form).getByText('Yêu cầu cung cấp mã xác thực hoặc mật khẩu')).toBeTruthy();
@@ -153,7 +159,7 @@ describe('đề xuất bổ sung: nhánh dự phòng trên giao diện', () => {
         throw new GeocodingError('NETWORK_ERROR', 'Không kết nối được Vietmap.');
       },
     };
-    stubApi(buildApp({ ai, places: vietmapDown }));
+    await stubApi(buildApp({ ai, places: vietmapDown }));
     const user = userEvent.setup();
     const form = await fillAndExtract(user, FEE_TEXT);
     await user.click(within(form).getByRole('button', { name: 'Đối chiếu' }));
@@ -175,7 +181,7 @@ describe('đề xuất bổ sung: nhánh dự phòng trên giao diện', () => {
     const brokenAi: AiExtractor = async () => {
       throw new Error('bedrock down');
     };
-    stubApi(buildApp({ ai: brokenAi }));
+    await stubApi(buildApp({ ai: brokenAi }));
     const user = userEvent.setup();
     const form = await fillAndExtract(user, FEE_TEXT);
 
@@ -192,6 +198,6 @@ describe('đề xuất bổ sung: nhánh dự phòng trên giao diện', () => {
 
     const inv = await screen.findByRole('article', { name: 'Lời mời' });
     expect(within(inv).getByText('Cần thận trọng')).toBeTruthy();
-    expect(screen.getByRole('article', { name: 'Bước tiếp theo' }).textContent).toContain('Tạm dừng đóng phí');
+    expect(screen.getByRole('article', { name: 'Việc nên làm ngay' }).textContent).toContain('Tạm dừng đóng phí');
   });
 });
