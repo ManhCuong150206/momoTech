@@ -11,7 +11,7 @@ import {
   verifyRequestSchema,
   verifyResponseSchema,
 } from '../../../shared/schemas.js';
-import { API_VERSION } from './app.js';
+import { API_VERSION } from './version.js';
 
 // OpenAPI 3.1 dựng từ chính JSON Schema mà Fastify dùng, nên tài liệu không lệch với mã.
 // Tạo lại docs/openapi.json bằng `npm run openapi -w apps/api`. Test kiểm tra tệp đã khớp.

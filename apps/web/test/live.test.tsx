@@ -3,8 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../src/App';
-import { buildApp } from '../../api/src/app';
-import type { AiExtractor } from '../../api/src/ai';
+import { buildApp } from '../../api/test/harness';
+import type { AiExtractor } from '../../api/src/viec-that/ai';
+import { GeocodingError } from '../../api/src/geocoding/geocoding.service';
 
 const TEXT =
   'Chào em, Công ty TNHH Ánh Dương mời em phỏng vấn vị trí Nhân viên Kinh doanh tại 25 Nguyễn Huệ, Quận 1. Em gửi trước ảnh CCCD và đóng phí hồ sơ 300.000đ.';
@@ -145,17 +146,23 @@ describe('đề xuất bổ sung: nhánh dự phòng trên giao diện', () => {
     expect(within(job).getByText(/đã đóng tuyển/)).toBeTruthy();
   });
 
-  it('Places lỗi: địa điểm "Chưa kiểm tra được", vẫn có nút bản đồ, thông báo chung và các thẻ khác', async () => {
-    stubApi(buildApp({ ai, places: { search: async () => { throw new Error('timeout'); } } }));
+  it('Vietmap lỗi: địa điểm "Chưa kiểm tra được", vẫn có nút bản đồ, thông báo chung và các thẻ khác', async () => {
+    const vietmapDown = {
+      configured: true,
+      findPlace: async () => {
+        throw new GeocodingError('NETWORK_ERROR', 'Không kết nối được Vietmap.');
+      },
+    };
+    stubApi(buildApp({ ai, places: vietmapDown }));
     const user = userEvent.setup();
     const form = await fillAndExtract(user, FEE_TEXT);
     await user.click(within(form).getByRole('button', { name: 'Đối chiếu' }));
 
     const loc = await screen.findByRole('article', { name: 'Địa điểm' });
     expect(within(loc).getByText('Chưa kiểm tra được')).toBeTruthy();
-    expect(within(loc).getByText(/dịch vụ bản đồ tạm lỗi/)).toBeTruthy();
+    expect(within(loc).getByText(/Không kết nối được Vietmap\. Mở bản đồ/)).toBeTruthy();
     expect(within(loc).getByRole('link', { name: 'Mở bản đồ' })).toBeTruthy();
-    expect(screen.getByText(/^Dịch vụ bản đồ tạm lỗi/)).toBeTruthy();
+    expect(screen.getByText('Không kết nối được Vietmap. Các phần khác vẫn có kết quả.')).toBeTruthy();
 
     const inv = screen.getByRole('article', { name: 'Lời mời' });
     expect(within(inv).getByText('Cần thận trọng')).toBeTruthy();

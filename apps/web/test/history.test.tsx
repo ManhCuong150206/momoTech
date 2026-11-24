@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../src/App';
-import { buildApp } from '../../api/src/app';
+import { buildApp } from '../../api/test/harness';
 import { createTestDb } from '../../api/test/pglite-db';
 
 let db: Awaited<ReturnType<typeof createTestDb>>;

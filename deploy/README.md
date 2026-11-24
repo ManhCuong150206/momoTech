@@ -1,6 +1,6 @@
 # Triển khai Việc Thật trên EC2
 
-Caddy phục vụ bản web đã build tại `/var/www/viec-that` và chuyển `/healthz`, `/api/*` đến Fastify tại `127.0.0.1:3000`. Cấu hình dành cho Amazon Linux 2023. Cần một máy EC2, tên miền trỏ về máy đó và quyền quản trị trên máy.
+Caddy phục vụ bản web đã build tại `/var/www/viec-that` và chuyển `/healthz`, `/api/*` đến API NestJS tại `127.0.0.1:3000`. Cấu hình dành cho Amazon Linux 2023. Cần một máy EC2, tên miền trỏ về máy đó và quyền quản trị trên máy.
 
 ## Chuẩn bị máy chủ
 
@@ -16,7 +16,7 @@ Caddy phục vụ bản web đã build tại `/var/www/viec-that` và chuyển `
    COOKIE_SECURE=true
    ```
 
-   Khi có quyền Bedrock, đặt `AWS_REGION` và `BEDROCK_MODEL_ID`. Máy EC2 nhận quyền gọi mô hình từ IAM role của đội. Để tiếp tục với chế độ dự phòng, để trống cấu hình Places trên máy chủ. Nút **Mở bản đồ** vẫn dùng được khi có địa chỉ.
+   Khi có quyền Bedrock, đặt `AWS_REGION` và `BEDROCK_MODEL_ID`. Máy EC2 nhận quyền gọi mô hình từ IAM role của đội. Khi có khóa Vietmap, đặt `VIETMAP_API_KEY`. Để trống thì địa điểm chạy chế độ dự phòng. Nút **Mở bản đồ** vẫn dùng được khi có địa chỉ.
 
 4. Cài unit systemd và Caddyfile với quyền `0644`. Trong cấu hình bổ sung của dịch vụ Caddy (`sudo systemctl edit caddy`), đặt tên miền thực tế bằng biến `VIECTHAT_SITE`.
 

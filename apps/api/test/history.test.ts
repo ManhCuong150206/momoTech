@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import Ajv from 'ajv';
-import { buildApp } from '../src/app.js';
-import { migrate } from '../src/db.js';
-import { DEFAULT_CASES_PATH, type DemoCase } from '../src/demo-data.js';
-import { hashToken, purgeExpired } from '../src/history.js';
+import { Ajv } from 'ajv';
+import { buildApp } from './harness.js';
+import { migrate } from '../src/viec-that/db.js';
+import { DEFAULT_CASES_PATH, type DemoCase } from '../src/viec-that/demo-data.js';
+import { hashToken, purgeExpired } from '../src/viec-that/history.js';
 import { historyDetailResponseSchema, historyListResponseSchema } from '../../../shared/schemas.js';
 import type { HistoryDetailResponse, HistoryListResponse, VerifyResponse } from '../../../shared/contract.js';
 import { createTestDb } from './pglite-db.js';
@@ -58,7 +58,11 @@ function browser() {
 
 describe('migration', () => {
   it('chạy lại không áp dụng thêm', async () => {
-    expect(await migrate(db)).toEqual([]);
+    const before = await db.query<{ n: number }>('select count(*)::int as n from schema_migrations');
+    await migrate(db);
+    const after = await db.query<{ n: number }>('select count(*)::int as n from schema_migrations');
+    expect(after.rows[0]!.n).toBe(before.rows[0]!.n);
+    expect(before.rows[0]!.n).toBeGreaterThan(0);
   });
 });
 

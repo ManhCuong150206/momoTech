@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { afterAll, describe, expect, it } from 'vitest';
 import type { ExtractResponse, VerifyResponse } from '../../../shared/contract.js';
-import { buildApp } from '../src/app.js';
+import { buildApp } from './harness.js';
 
 interface EvaluationCase {
   id: string;

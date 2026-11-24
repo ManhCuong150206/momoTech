@@ -1,19 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import Ajv from 'ajv';
+import { Ajv } from 'ajv';
 import type { ConverseCommandInput } from '@aws-sdk/client-bedrock-runtime';
-import { buildApp } from '../src/app.js';
-import { AiError, createBedrockExtractor, sanitizeAiOutput, type AiExtractor } from '../src/ai.js';
-import {
-  addressOverlaps,
-  companyNameMatches,
-  createGooglePlacesClient,
-  evaluatePlaces,
-  PlacesError,
-  type PlaceHit,
-  type PlacesClient,
-} from '../src/places.js';
-import { evaluateJobLive, todayVn } from '../src/verify.js';
-import { extractLive, findRequirements } from '../src/extract.js';
+import { buildApp } from './harness.js';
+import { AiError, createBedrockExtractor, sanitizeAiOutput, type AiExtractor } from '../src/viec-that/ai.js';
+import { GeocodingError } from '../src/geocoding/geocoding.service.js';
+import { evaluateLocationLive, type PlaceFinder } from '../src/viec-that/location.js';
+import { evaluateJobLive, todayVn } from '../src/viec-that/verify.js';
+import { extractLive, findRequirements } from '../src/viec-that/extract.js';
 import { verifyResponseSchema } from '../../../shared/schemas.js';
 import type { ExtractResponse, VerifyRequest, VerifyResponse } from '../../../shared/contract.js';
 import { createTestDb } from './pglite-db.js';
@@ -132,70 +125,87 @@ describe('VT07 AI đọc lời mời (Bedrock Converse)', () => {
   });
 });
 
-// ---------------------------------------------------------------- VT08: địa điểm
-describe('VT08 đối chiếu địa điểm (Google Places)', () => {
-  it('gọi Places (New) đúng địa chỉ, khóa trong header, field mask và timeout', async () => {
-    let call: { url: string; init: RequestInit } | undefined;
-    const client = createGooglePlacesClient('KEY123', (async (url: string, init: RequestInit) => {
-      call = { url, init };
-      return new Response(JSON.stringify({ places: [{ displayName: { text: 'Ánh Dương' }, formattedAddress: '25 Nguyễn Huệ', types: ['establishment'], googleMapsUri: 'https://maps.google.com/?cid=1' }] }), { status: 200 });
-    }) as typeof fetch);
-    const hits = await client.search('Ánh Dương 25 Nguyễn Huệ');
-    expect(call!.url).toBe('https://places.googleapis.com/v1/places:searchText');
-    const headers = call!.init.headers as Record<string, string>;
-    expect(headers['X-Goog-Api-Key']).toBe('KEY123');
-    expect(headers['X-Goog-FieldMask']).toContain('places.displayName');
-    expect(JSON.parse(call!.init.body as string)).toMatchObject({ textQuery: 'Ánh Dương 25 Nguyễn Huệ', regionCode: 'VN', languageCode: 'vi' });
-    expect(hits[0]).toEqual({ name: 'Ánh Dương', address: '25 Nguyễn Huệ', types: ['establishment'], mapsUri: 'https://maps.google.com/?cid=1' });
+// ---------------------------------------------------------------- VT08: địa điểm (Vietmap)
+// Client Vietmap (HTTP, hạn mức, bộ nhớ đệm) có test riêng trong src/geocoding/geocoding.service.spec.ts.
+describe('VT08 đối chiếu địa điểm (Vietmap)', () => {
+  const ADDR = '25 Nguyễn Huệ, Quận 1, tầng 4';
+  const TODAY = '2026-11-21';
+  const place = (name: string | null, address: string, streetAddress: string | null = null) => ({
+    name,
+    address,
+    streetAddress,
+    lat: 10.77,
+    lon: 106.7,
+  });
+  const finder = (business: ReturnType<typeof place> | null, other: ReturnType<typeof place> | null = business): PlaceFinder => ({
+    configured: true,
+    findPlace: async (_q: string, company?: string) => (company ? business : other),
   });
 
-  it('lỗi HTTP hoặc mạng thành PlacesError', async () => {
-    const denied = createGooglePlacesClient('k', (async () => new Response('{}', { status: 403 })) as typeof fetch);
-    await expect(denied.search('x')).rejects.toBeInstanceOf(PlacesError);
-    const down = createGooglePlacesClient('k', (async () => { throw new TypeError('net'); }) as typeof fetch);
-    await expect(down.search('x')).rejects.toBeInstanceOf(PlacesError);
+  it('khớp: đúng tên công ty tại đúng địa chỉ, bỏ phần tầng khi tra', async () => {
+    const queries: string[] = [];
+    const f: PlaceFinder = {
+      configured: true,
+      findPlace: async (q: string) => {
+        queries.push(q);
+        return place('Ánh Dương', '25 Nguyễn Huệ, Quận 1, Hồ Chí Minh', '25 Nguyễn Huệ');
+      },
+    };
+    const { location } = await evaluateLocationLive(ADDR, 'Công ty TNHH Ánh Dương', f, TODAY);
+    expect(location.status).toBe('matched');
+    expect(location.source.label).toBe('Vietmap');
+    expect(location.checkedOn).toBe(TODAY);
+    expect(queries[0]).not.toContain('tầng');
   });
 
-  it('so tên công ty và địa chỉ', () => {
-    expect(companyNameMatches('Công ty TNHH Ánh Dương', 'Anh Duong Co., Ltd')).toBe(true);
-    expect(companyNameMatches('Công ty TNHH Ánh Dương', 'Tòa nhà Bitexco')).toBe(false);
-    expect(addressOverlaps('25 Nguyễn Huệ, Quận 1, tầng 4', '25 Nguyễn Huệ, Bến Nghé, Quận 1, Hồ Chí Minh')).toBe(true);
-    expect(addressOverlaps('25 Nguyễn Huệ, Quận 1', '70 Lê Lợi, Quận 3')).toBe(false);
+  it('chưa xác nhận khi số nhà khác dù tên công ty và đường khớp', async () => {
+    const f = finder(place('Ánh Dương', '99 Nguyễn Huệ, Quận 1, Hồ Chí Minh', '99 Nguyễn Huệ'));
+    expect((await evaluateLocationLive(ADDR, 'Công ty TNHH Ánh Dương', f, TODAY)).location.status).toBe('company_unconfirmed');
   });
 
-  const hit = (name: string, address: string, types = ['establishment']): PlaceHit => ({ name, address, types, mapsUri: null });
-  const ADDR = '25 Nguyễn Huệ, Quận 1';
-
-  it('khớp: đúng tên công ty tại đúng địa chỉ', () => {
-    const ev = evaluatePlaces('Công ty TNHH Ánh Dương', ADDR, [hit('Ánh Dương', '25 Nguyễn Huệ, Quận 1, TP.HCM')]);
-    expect(ev.status).toBe('matched');
+  it('chưa xác nhận: công ty tồn tại nhưng ở địa chỉ khác', async () => {
+    const f = finder(place('Ánh Dương', '70 Lê Lợi, Quận 3, Hồ Chí Minh', '70 Lê Lợi'));
+    const { location } = await evaluateLocationLive(ADDR, 'Công ty TNHH Ánh Dương', f, TODAY);
+    expect(location.status).toBe('company_unconfirmed');
+    expect(location.basis).toContain('Chưa xác nhận công ty tại địa chỉ hẹn');
   });
 
-  it('chưa xác nhận khi số nhà khác dù tên công ty và đường khớp', () => {
-    const ev = evaluatePlaces('Công ty TNHH Ánh Dương', ADDR, [hit('Ánh Dương', '99 Nguyễn Huệ, Quận 1, TP.HCM')]);
-    expect(ev.status).toBe('company_unconfirmed');
+  it('chưa xác nhận: chỉ thấy tòa nhà hoặc đơn vị khác tại địa chỉ', async () => {
+    const f = finder(null, place('Tòa nhà Demo', '25 Nguyễn Huệ, Quận 1, Hồ Chí Minh', '25 Nguyễn Huệ'));
+    const { location } = await evaluateLocationLive(ADDR, 'Công ty TNHH Ánh Dương', f, TODAY);
+    expect(location.status).toBe('company_unconfirmed');
+    expect(location.place.displayName).toBe('Tòa nhà Demo');
   });
 
-  it('so cả phần chữ và phần sau dấu gạch chéo của số nhà', () => {
-    expect(addressOverlaps('Số 25A/1 Nguyễn Huệ, Quận 1', '25a/1 Nguyễn Huệ, Quận 1')).toBe(true);
-    expect(addressOverlaps('25A/1 Nguyễn Huệ, Quận 1', '25B/1 Nguyễn Huệ, Quận 1')).toBe(false);
-    expect(addressOverlaps('25A/1 Nguyễn Huệ, Quận 1', '25A/2 Nguyễn Huệ, Quận 1')).toBe(false);
+  it('chưa xác nhận: không có kết quả', async () => {
+    const { location } = await evaluateLocationLive(ADDR, 'Công ty X', finder(null), TODAY);
+    expect(location.status).toBe('company_unconfirmed');
+    expect(location.basis).toContain('chưa tìm thấy');
   });
-  it('chưa xác nhận: công ty tồn tại nhưng ở địa chỉ khác (trụ sở hoặc chi nhánh khác)', () => {
-    const ev = evaluatePlaces('Công ty TNHH Ánh Dương', ADDR, [hit('Ánh Dương', '70 Lê Lợi, Quận 3')]);
-    expect(ev.status).toBe('company_unconfirmed');
-    expect(ev.basis).toContain('khác địa chỉ hẹn');
+
+  it('không có tên công ty thì không bao giờ khớp', async () => {
+    const f = finder(place('Ánh Dương', '25 Nguyễn Huệ, Quận 1', '25 Nguyễn Huệ'));
+    expect((await evaluateLocationLive(ADDR, undefined, f, TODAY)).location.status).toBe('company_unconfirmed');
   });
-  it('chưa xác nhận: chỉ thấy tòa nhà hoặc đơn vị khác tại địa chỉ', () => {
-    const ev = evaluatePlaces('Công ty TNHH Ánh Dương', ADDR, [hit('Tòa nhà Demo', '25 Nguyễn Huệ, Quận 1', ['premise'])]);
-    expect(ev.status).toBe('company_unconfirmed');
-    expect(ev.basis).toContain('Chưa xác nhận công ty tại địa chỉ này');
+
+  it('Vietmap lỗi: "unavailable", có thông báo, vẫn có link bản đồ', async () => {
+    const f: PlaceFinder = {
+      configured: true,
+      findPlace: async () => {
+        throw new GeocodingError('NETWORK_ERROR', 'Không kết nối được Vietmap.');
+      },
+    };
+    const { location, notice } = await evaluateLocationLive(ADDR, 'Công ty X', f, TODAY);
+    expect(location.status).toBe('unavailable');
+    expect(location.mapUrl).toContain('google.com/maps');
+    expect(notice).toContain('Không kết nối được Vietmap');
   });
-  it('chưa xác nhận: không có kết quả', () => {
-    expect(evaluatePlaces('Công ty X', ADDR, []).status).toBe('company_unconfirmed');
-  });
-  it('không có tên công ty thì không bao giờ khớp', () => {
-    expect(evaluatePlaces(null, ADDR, [hit('Ánh Dương', '25 Nguyễn Huệ, Quận 1')]).status).toBe('company_unconfirmed');
+
+  it('chưa cấu hình Vietmap: "Chưa đối chiếu tự động" và có thông báo', async () => {
+    const { location, notice } = await evaluateLocationLive(ADDR, 'Công ty X', { configured: false, findPlace: async () => null }, TODAY);
+    expect(location.status).toBe('not_checked');
+    expect(location.basis).toContain('Chưa đối chiếu tự động');
+    expect(notice).toContain('Vietmap chưa được cấu hình');
   });
 });
 
@@ -259,8 +269,11 @@ describe('VT10-VT11 luồng live qua API', () => {
     requirements: [{ kind: 'fee_request', quote: 'đóng phí hồ sơ 300.000đ' }],
     dropped: 0,
   });
-  const places: PlacesClient = {
-    search: async () => [{ name: 'Tòa nhà Bitexco', address: '25 Nguyễn Huệ, Quận 1', types: ['premise'], mapsUri: 'https://maps.google.com/?cid=9' }],
+  // Vietmap chỉ thấy tòa nhà, không thấy công ty tại địa chỉ hẹn.
+  const places: PlaceFinder = {
+    configured: true,
+    findPlace: async (_q: string, company?: string) =>
+      company ? null : { name: 'Tòa nhà Bitexco', address: '25 Nguyễn Huệ, Quận 1, Hồ Chí Minh', streetAddress: '25 Nguyễn Huệ', lat: 10.77, lon: 106.7 },
   };
   const app = buildApp({ ai, places });
 
@@ -295,7 +308,7 @@ describe('VT10-VT11 luồng live qua API', () => {
     expect(body.job.status).toBe('expired');
     expect(body.job.source.simulated).toBe(false);
     expect(body.location.status).toBe('company_unconfirmed');
-    expect(body.location.source.label).toBe('Google Maps');
+    expect(body.location.source.label).toBe('Vietmap');
     expect(body.location.mapUrl).toContain('google.com/maps');
     expect(body.contact.status).toBe('unverified');
     expect(body.invitation.status).toBe('caution');
@@ -307,12 +320,15 @@ describe('VT10-VT11 luồng live qua API', () => {
   });
 
   it('Places lỗi: địa điểm "unavailable" nhưng các phần khác vẫn có kết quả', async () => {
-    const broken = buildApp({ ai, places: { search: async () => { throw new PlacesError('x'); } } });
+    const broken = buildApp({
+      ai,
+      places: { configured: true, findPlace: async () => { throw new GeocodingError('NETWORK_ERROR', 'Không kết nối được Vietmap.'); } },
+    });
     const body = (await flow(broken, { closesOn: '2026-12-31' })).res.json<VerifyResponse>();
     expect(body.location.status).toBe('unavailable');
     expect(body.location.mapUrl).not.toBeNull();
     expect(body.job.status).toBe('open');
-    expect(body.notices.join(' ')).toContain('Dịch vụ bản đồ tạm lỗi');
+    expect(body.notices.join(' ')).toContain('Không kết nối được Vietmap. Các phần khác vẫn có kết quả.');
     expect(body.invitation.status).toBe('caution');
   });
 
@@ -321,7 +337,7 @@ describe('VT10-VT11 luồng live qua API', () => {
     expect(body.location.status).toBe('not_checked');
     expect(body.location.basis).toContain('Chưa đối chiếu tự động');
     expect(body.location.mapUrl).not.toBeNull();
-    expect(body.notices.join(' ')).toContain('Google Maps chưa được cấu hình');
+    expect(body.notices.join(' ')).toContain('Vietmap chưa được cấu hình');
     expect(body.job.status).toBe('unavailable');
   });
 

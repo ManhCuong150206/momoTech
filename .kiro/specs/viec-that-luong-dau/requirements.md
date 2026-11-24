@@ -7,7 +7,7 @@ Spec này phủ ba task trong [danh sách task trong README.md](../../../README.
 | Task | Tên trong danh sách task | Phần trong spec này |
 |---|---|---|
 | **VT04** | Chốt schema vào/ra | Hợp đồng API cho `extract`, `verify`, `healthz` ([design.md](design.md)). Mã nguồn: `shared/contract.ts`, `shared/schemas.ts`. |
-| **VT05** | Tạo khung React và Fastify | `apps/web` (React + Vite + TypeScript), `apps/api` (Fastify + TypeScript), `GET /healthz`, cấu hình mẫu `.env.example`. |
+| **VT05** | Tạo khung React và Fastify | `apps/web` (React + Vite + TypeScript), `apps/api` (NestJS + TypeScript, thay Fastify từ 24/11/2026), `GET /healthz`, cấu hình mẫu `.env.example`. |
 | **VT06** | Tạo form lời mời và màn hình xác nhận | Màn hình nhập, màn hình sửa dữ kiện, màn hình kết quả với phần sao chép câu hỏi. |
 
 Ngoài phạm vi của ba task trên: triển khai AWS (VT12), k6, Street View, đọc ảnh. Chế độ live (VT07–VT11) và lịch sử tra cứu được thêm ở các mục dưới đây.
@@ -58,11 +58,11 @@ Ngoài phạm vi của ba task trên: triển khai AWS (VT12), k6, Street View, 
 
 ## Chế độ live: AI, địa điểm, tin đăng (VT07 đến VT11)
 
-**R19. Hạ cấp có thông báo.** Thiếu `BEDROCK_MODEL_ID` thì chỉ dùng luật cố định để trích yêu cầu. Thiếu `GOOGLE_MAPS_API_KEY` thì địa điểm là `not_checked` (Chưa đối chiếu tự động) kèm nút mở bản đồ. Dịch vụ lỗi giữa chừng thì phần đó là `unavailable` hoặc quay về luật cố định, các phần khác vẫn có kết quả, không trả 500. Mọi trường hợp đều có dòng trong `notices`.
+**R19. Hạ cấp có thông báo.** Thiếu `BEDROCK_MODEL_ID` thì chỉ dùng luật cố định để trích yêu cầu. Thiếu `VIETMAP_API_KEY` thì địa điểm là `not_checked` (Chưa đối chiếu tự động) kèm nút mở bản đồ. Dịch vụ lỗi giữa chừng thì phần đó là `unavailable` hoặc quay về luật cố định, các phần khác vẫn có kết quả, không trả 500. Mọi trường hợp đều có dòng trong `notices`.
 
 **R20. AI chỉ trả dữ kiện có nguồn (VT07).** Bedrock Converse với công cụ bắt buộc, nhiệt độ 0. Mỗi mục AI cần có đoạn trích trong lời mời. Máy chủ báo số mục bị loại, kể cả trích đoạn bị tách khỏi câu phủ định rõ ràng. Luật cố định chạy trên chữ có dấu và không dấu, nhận diện một số cách viết tắt về phí, giấy tờ và mã xác thực. Trạng thái do máy chủ quyết định theo dữ kiện. Chỉ văn bản lời mời được gửi tới AI.
 
-**R21. Địa điểm (VT08).** Tìm bằng Places Text Search theo `công ty + địa chỉ`. `matched` chỉ khi tên công ty khớp và địa chỉ trả về khớp địa chỉ hẹn. Công ty ở địa chỉ khác, chỉ thấy tòa nhà, hoặc không có kết quả đều là `company_unconfirmed`.
+**R21. Địa điểm (VT08).** Tìm bằng Vietmap theo tên công ty và địa chỉ (bỏ phần tầng, phòng khi tra). `matched` chỉ khi tên công ty khớp và địa chỉ trả về khớp địa chỉ hẹn. Công ty ở địa chỉ khác, chỉ thấy tòa nhà, hoặc không có kết quả đều là `company_unconfirmed`.
 
 **R22. Tin đăng (VT09).** Việc Thật không tự đọc trang TopCV, LinkedIn hay sàn khác. Người dùng nhập hạn nộp, ngày đăng, mã tin và trạng thái đóng tuyển mà họ thấy. `expired` chỉ khi hạn đã qua (theo giờ Việt Nam) hoặc tin ghi rõ đã đóng. Có link mà chưa có dữ kiện thì `unavailable` (Chưa kiểm tra được).
 

@@ -30,17 +30,17 @@ Cập nhật ngày 22/11/2026.
 
 **Đã làm và đã kiểm tra**
 - Hợp đồng API (VT04): kiểu TypeScript và JSON Schema trong `shared/`, ví dụ và mã lỗi trong `design.md`.
-- Khung chạy (VT05): React + Vite + TypeScript, Fastify + TypeScript, `/healthz`, npm workspaces, `.env.example`.
+- Khung chạy (VT05): React + Vite + TypeScript, NestJS + TypeScript (thay Fastify từ 24/11/2026), `/healthz`, npm workspaces, `.env.example`.
 - Giao diện (VT06): nhập lời mời, sửa dữ kiện, xem kết quả bốn phần (tin đăng, địa điểm, lời mời, người liên hệ), sao chép câu hỏi, mở bản đồ.
 - Bốn ca mô phỏng chạy đúng `expected` ở API. VT-DEMO-01, 02, 04 chạy hết luồng ở giao diện.
 - Lịch sử tra cứu bằng PostgreSQL: lưu theo thiết bị (cookie ẩn danh), xem lại, chọn và xóa từng mục, tự hết hạn sau 30 ngày, tối đa 100 bản mỗi thiết bị. Đã thử trên PostgreSQL 18 thật.
-- Chế độ live (mã VT07 đến VT11): AI đọc lời mời qua Bedrock, địa điểm qua Google Places, tin đăng từ dữ kiện người dùng nhập, hạ cấp có thông báo khi thiếu dịch vụ, giới hạn 30 yêu cầu mỗi phút mỗi IP.
-- Kiểm thử local: API 90 test, web 18 test, typecheck và build đạt. Các test của AI và Places dùng bản giả lập.
+- Chế độ live (mã VT07 đến VT11): AI đọc lời mời qua Bedrock, địa điểm qua Vietmap, tin đăng từ dữ kiện người dùng nhập, hạ cấp có thông báo khi thiếu dịch vụ, giới hạn 30 yêu cầu mỗi phút mỗi IP.
+- Kiểm thử local: API 103 test, web 18 test, typecheck và build đạt. Các test của AI và Vietmap dùng bản giả lập.
 - Caddy phục vụ được bản build và chuyển tiếp API ở local. k6 đo đủ 600 luồng mô phỏng với 0 lỗi HTTP. Xem [triển khai](deploy/README.md) và [kiểm thử tải](#kiểm-thử-tải-local-vt14).
 
 **Chưa làm hoặc chưa kiểm chứng**
-- VT02, VT03: chưa có bằng chứng về quyền Bedrock, EC2/HTTPS và hạn mức AWS. Places trả `403 PERMISSION_DENIED`, tạm gác phần gọi thật. Xem [mục 7](#7-kiểm-tra-dịch-vụ-ngoài-vt02-vt03).
-- VT07, VT08: mã đã xong nhưng chưa gọi Bedrock và Places thật.
+- VT02, VT03: chưa có bằng chứng về quyền Bedrock, EC2/HTTPS và hạn mức AWS. Địa điểm chuyển từ Google Places (trả `403 PERMISSION_DENIED`) sang Vietmap, chưa có khóa Vietmap để gọi thật. Xem [mục 7](#7-kiểm-tra-dịch-vụ-ngoài-vt02-vt03).
+- VT07, VT08: mã đã xong nhưng chưa gọi Bedrock và Vietmap thật.
 - VT06, VT15: chưa thử trên Safari iPhone thật.
 - VT12, VT14: đã chuẩn bị cấu hình máy chủ và đo tải local. Còn triển khai EC2, đo trên bản chạy công khai và thu bằng chứng để hoàn thiện hồ sơ nộp.
 - Chưa commit các thay đổi ngày 22/11/2026. Git có 2 commit, mới nhất là `6a86e78`.
@@ -50,7 +50,7 @@ Cập nhật ngày 22/11/2026.
 | 1. Biết sản phẩm cần trả lời gì | VT01 | Xong. Dữ liệu có sẵn từ trước. Cần nhóm xác nhận câu mục tiêu và đọc lại bốn ca. |
 | 2. Kiểm tra máy và dịch vụ | VT02, VT03 | Máy phát triển xong. AWS và Google chờ nhóm. |
 | 3. Bản chạy đầu tiên trên máy | VT04 đến VT06 | Xong, trừ thử trên Safari iPhone. |
-| 4. Thay mô phỏng bằng xử lý thật | VT07 đến VT11 | Mã và test xong. Chờ Bedrock và Places thật. |
+| 4. Thay mô phỏng bằng xử lý thật | VT07 đến VT11 | Mã và test xong. Chờ Bedrock và Vietmap thật. |
 | 5. Đưa lên mạng và kiểm tra | VT12 đến VT17 | Cấu hình Caddy và bài đo k6 đã chạy local. Còn EC2, HTTPS công khai và kiểm thử iPhone. |
 | 6. Nộp và duy trì | VT18 đến VT20 | Chưa bắt đầu. |
 
@@ -69,7 +69,7 @@ Cập nhật ngày 22/11/2026.
 - Bản thi đối chiếu lời mời, công ty, địa điểm và tin đăng. Hiện ngày đăng hoặc hạn tuyển khi có dữ kiện, nguồn tra cứu và câu hỏi xác minh để người dùng tự gửi.
 - Ca demo chính dùng một tin có thật từng đăng nhưng đã hết hạn, địa điểm chưa xác nhận công ty và lời mời đòi phí giữ chỗ. Mỗi phần được đánh giá bằng nguồn riêng.
 - Bản đồ là phần chính. Street View, đọc ảnh, đánh giá địa điểm và Phím tắt iPhone là phần mở rộng tùy điều kiện.
-- Stack: React, Vite, Fastify, TypeScript. Bedrock và Google Places cần xác nhận quyền và hạn mức. Bản đầu xử lý từng yêu cầu. Lịch sử tra cứu dùng PostgreSQL (mở rộng đã thêm).
+- Stack: React, Vite, NestJS, TypeScript. Bedrock và Vietmap cần xác nhận quyền và hạn mức. Bản đầu xử lý từng yêu cầu. Lịch sử tra cứu dùng PostgreSQL (mở rộng đã thêm).
 
 ---
 
@@ -89,7 +89,7 @@ Hai chế độ: ca mẫu chạy bằng **dữ liệu mô phỏng** (có nhãn "
 
 | Phần | Bản thi cần làm | Khi thiếu dữ liệu |
 |---|---|---|
-| **Địa điểm** | So tên công ty và địa chỉ hẹn với kết quả Google Places khi có quyền. Hiện địa chỉ phù hợp nhất, loại địa điểm nếu nguồn có, và nút mở bản đồ. | Chỉ tìm được tòa nhà hoặc kết quả khác công ty thì hiện "Chưa xác nhận công ty tại địa chỉ này". Phân biệt trụ sở, chi nhánh và địa điểm thuê phỏng vấn. Chưa có quyền Places thì hiện "Chưa đối chiếu tự động". |
+| **Địa điểm** | So tên công ty và địa chỉ hẹn với kết quả Vietmap khi có khóa. Hiện địa chỉ phù hợp nhất, loại địa điểm nếu nguồn có, và nút mở bản đồ. | Chỉ tìm được tòa nhà hoặc kết quả khác công ty thì hiện "Chưa xác nhận công ty tại địa chỉ này". Phân biệt trụ sở, chi nhánh và địa điểm thuê phỏng vấn. Chưa có khóa Vietmap thì hiện "Chưa đối chiếu tự động". |
 | **Tin đăng** | Đối chiếu công ty, vị trí, mã tin, ngày đăng, hạn nộp và trạng thái theo nguồn nhìn thấy. Với TopCV hoặc LinkedIn, nhận link làm tham chiếu kèm nội dung người dùng cung cấp. | Link không truy cập được hoặc thiếu hạn nộp thì ghi "Chưa kiểm tra được". Chỉ ghi "Hết hạn" khi có hạn đã qua hoặc nguồn ghi rõ đã đóng tuyển. |
 | **Lời mời** | AI trích yêu cầu cần xác minh, ví dụ "đóng phí giữ chỗ" hoặc "gửi giấy tờ", và đối chiếu với nội dung tin hoặc kênh chính thức đã rà. Danh tính người liên hệ có trạng thái riêng. | Khi địa chỉ khớp hoặc tin có thật, giữ trạng thái người gửi là "Chưa xác minh" cho đến khi có căn cứ về người liên hệ. |
 | **Hướng dẫn** | Gợi ý một hành động cụ thể và một câu hỏi để sao chép. Ví dụ, "Cho em xin mã tuyển dụng hiện tại, số tầng phỏng vấn và email tuyển dụng chính thức để em xác nhận lịch." | Gợi ý đúng dữ kiện đang thiếu. Email, website và thông tin liên hệ lấy từ nguồn đã đối chiếu. |
@@ -97,7 +97,7 @@ Hai chế độ: ca mẫu chạy bằng **dữ liệu mô phỏng** (có nhãn "
 
 Cổng đăng ký doanh nghiệp hỗ trợ đối chiếu tên pháp lý và trụ sở chính khi có thông tin tra cứu. Địa chỉ đăng ký và dữ liệu bản đồ phản ánh nguồn công bố tại thời điểm kiểm tra. LinkedIn và TopCV chỉ được tích hợp tự động khi có quyền hoặc phương thức phù hợp với điều khoản. Bản thi dùng thông tin do người dùng cung cấp hoặc dữ liệu nhóm có quyền sử dụng. Hiện mã **không tự đọc** trang của sàn việc làm: người dùng nhập hạn nộp, ngày đăng, mã tin và trạng thái đóng tuyển mà họ thấy.
 
-Nguồn: [Google Places](https://developers.google.com/maps/documentation/places/web-service/place-details) · [Street View](https://developers.google.com/maps/documentation/streetview/metadata) · [Đăng ký doanh nghiệp](https://bocaodientu.dkkd.gov.vn/inf/default.aspx) · [LinkedIn](https://www.linkedin.com/legal/user-agreement) · [TopCV](https://www.topcv.vn/terms-of-service)
+Nguồn: [Vietmap](https://maps.vietmap.vn/docs/) · [Street View](https://developers.google.com/maps/documentation/streetview/metadata) · [Đăng ký doanh nghiệp](https://bocaodientu.dkkd.gov.vn/inf/default.aspx) · [LinkedIn](https://www.linkedin.com/legal/user-agreement) · [TopCV](https://www.topcv.vn/terms-of-service)
 
 ### Công nghệ và công cụ
 
@@ -105,9 +105,9 @@ Nguồn: [Google Places](https://developers.google.com/maps/documentation/places
 |---|---|---|
 | Làm việc | Antigravity để trao đổi, VS Code để sửa mã, Git quản lý phiên bản, Kiro IDE triển khai theo đặc tả. | Đang dùng. |
 | Web | React + Vite + TypeScript. Kiểm tra trên Safari iPhone thật. | Đã làm. Chưa thử trên iPhone thật. |
-| API | Node.js + Fastify + TypeScript. JSON Schema kiểm tra dữ liệu. OpenAPI ghi cách gọi. | Đã làm. OpenAPI 3.1 ở [`docs/openapi.json`](docs/openapi.json), sinh từ JSON Schema. Ví dụ ở [`docs/API-CONTRACT.md`](docs/API-CONTRACT.md). |
+| API | Node.js + NestJS 12 (Express) + TypeScript, chạy bằng `tsx`. JSON Schema kiểm tra dữ liệu. OpenAPI ghi cách gọi. | Đã làm. OpenAPI 3.1 ở [`docs/openapi.json`](docs/openapi.json), sinh từ JSON Schema. Ví dụ ở [`docs/API-CONTRACT.md`](docs/API-CONTRACT.md). |
 | AI | AWS SDK cho JavaScript, Bedrock Converse. Mô hình trích nội dung có cấu trúc. Máy chủ kiểm tra đoạn trích. | Mã xong, chưa gọi thật. |
-| Địa điểm | Google Places Text Search (New), Google Maps URLs để mở bản đồ. Street View là phần bổ sung. Hạn mức Maps tính riêng với AWS Sandbox. | Mã xong, chưa có khóa. Nút mở bản đồ chạy. |
+| Địa điểm | Vietmap (tìm theo tên công ty và địa chỉ), Google Maps URLs để mở bản đồ. Street View là phần bổ sung. Hạn mức Vietmap tính riêng với AWS Sandbox. | Mã xong, chưa có khóa Vietmap. Nút mở bản đồ chạy. |
 | Dữ liệu | Bộ ca mô phỏng trong JSON. PostgreSQL cho lịch sử tra cứu. | Đã làm. PostgreSQL 18 chạy cục bộ, kiểm thử bằng PGlite. |
 | Triển khai | AWS EC2 Amazon Linux 2023, Caddy, systemd, HTTPS công khai. Nhật ký kỹ thuật không ghi nội dung lời mời. IAM role cho EC2 để gọi Bedrock. | Chưa làm. |
 | Kiểm thử | Vitest và kiểm thử API. k6 đo độ trễ và lỗi. Safari iPhone cho luồng thực tế. | Vitest và k6 đã chạy local. Còn iPhone thật. |
@@ -120,7 +120,7 @@ Dùng ML hoặc DL tự huấn luyện chỉ khi có bài toán riêng và bộ 
 |---|---|
 | **443** | HTTPS công khai cho giám khảo và người dùng qua Caddy. |
 | **80** | Chuyển HTTP sang HTTPS hoặc xác thực chứng chỉ tùy cấu hình Caddy. |
-| **3000** | Cổng API. Fastify nghe nội bộ ở `127.0.0.1:3000`. Vite dev (5173) chuyển `/api` và `/healthz` sang đây. |
+| **3000** | Cổng API. NestJS nghe nội bộ ở `127.0.0.1:3000`. Vite dev (5173) chuyển `/api` và `/healthz` sang đây. |
 | **5432** | PostgreSQL cho lịch sử tra cứu, chỉ nội bộ. |
 | **22** | Quản trị SSH nếu Sandbox dùng phương án này. Giới hạn nguồn truy cập theo cấu hình đội. |
 
@@ -166,7 +166,7 @@ Phân vai đề xuất: **A** dữ liệu và AI, **B** web và AWS, **C** kiể
 |---|---|---|---|
 | [x] VT01 — Chuẩn bị ca demo và bộ ca đối chứng | A + C | — | Một ca demo và ba ca đối chứng bằng dữ liệu mô phỏng, kèm kết quả mong đợi và mẫu TopCV. Xem [dữ liệu demo](data/demo/README.md). |
 | [ ] VT02 — Kiểm tra AWS | B | — | Xác nhận EC2 AL2023, HTTPS, quyền Bedrock, hạn mức và thời hạn đến hết 11/12. *Chưa có bằng chứng. Công cụ kiểm tra đã sẵn, xem [mục 7](#7-kiểm-tra-dịch-vụ-ngoài-vt02-vt03).* |
-| [ ] VT03 — Kiểm tra nguồn Maps và tuyển dụng | A + B | — | Có kết quả Places thử với một địa chỉ, hoặc ghi rõ trạng thái truy cập. Rà quyền sử dụng và chọn nguồn tin đăng. *Places trả 403 và được hoãn. Đang dùng dữ kiện người dùng nhập, nhóm cần xác nhận.* |
+| [ ] VT03 — Kiểm tra nguồn Maps và tuyển dụng | A + B | — | Có kết quả Places thử với một địa chỉ, hoặc ghi rõ trạng thái truy cập. Rà quyền sử dụng và chọn nguồn tin đăng. *Google Places trả 403 nên chuyển sang Vietmap, chưa có khóa. Đang dùng dữ kiện người dùng nhập cho tin đăng, nhóm cần xác nhận.* |
 | [x] VT04 — Chốt schema vào/ra | A + B | VT01 | Có ví dụ JSON, mã lỗi và trạng thái riêng cho địa điểm, tin đăng, người liên hệ và lời yêu cầu. |
 
 ### 2. Xây luồng chính với Kiro · 23–28/11
@@ -176,7 +176,7 @@ Phân vai đề xuất: **A** dữ liệu và AI, **B** web và AWS, **C** kiể
 | [x] VT05 — Tạo khung React và Fastify | B | VT04 | Web, API và health endpoint chạy trên máy phát triển. Có cấu hình mẫu. |
 | [ ] VT06 — Tạo form lời mời và màn hình xác nhận | B | VT05 | Người dùng dán văn bản, link và địa chỉ, sửa được dữ kiện trước khi tra cứu trên Safari iPhone. *Chạy và test được trên máy phát triển, chưa thử trên iPhone thật.* |
 | [ ] VT07 — AI trích thông tin lời mời | A | VT02, VT04, VT05 | Mô hình trả công ty, vị trí, địa chỉ, hành động được yêu cầu và trích đoạn có thật. *Mã và test xong với bản giả lập. Chờ VT02 để gọi Bedrock thật.* |
-| [ ] VT08 — Đối chiếu địa điểm | B | VT03, VT05 | Tìm theo tên và địa chỉ. Phân biệt khớp công ty, chỉ thấy địa điểm, hoặc chưa kiểm tra. Hiện nút bản đồ. *Mã và test xong với bản giả lập. Dùng nút mở bản đồ trong thời gian hoãn xác minh Places.* |
+| [ ] VT08 — Đối chiếu địa điểm | B | VT03, VT05 | Tìm theo tên và địa chỉ. Phân biệt khớp công ty, chỉ thấy địa điểm, hoặc chưa kiểm tra. Hiện nút bản đồ. *Mã và test xong với Vietmap giả lập. Dùng nút mở bản đồ khi chưa có khóa Vietmap.* |
 | [ ] VT09 — Đối chiếu tin đăng | A | VT03–VT05 | Đọc dữ kiện được phép dùng, so ngày và trạng thái. Giữ nguồn kèm kết quả. Xử lý link đóng, cần đăng nhập hoặc thiếu hạn nộp. *Mã và test xong với dữ kiện người dùng nhập. Chờ nhóm chốt VT03.* |
 | [ ] VT10 — Giải thích và gợi ý câu hỏi | A + B | VT07–VT09 | Hiện từng căn cứ và một câu hỏi xác minh theo dữ kiện thiếu. Kiểm tra đoạn trích và nguồn liên hệ trước khi trả cho web. *Mã và test xong. Chờ VT07–VT09 chạy thật.* |
 | [ ] VT11 — Tích hợp kết quả vào web | B + C | VT06, VT10 | Trọn luồng từ nhập lời mời đến mở bản đồ, xem nguồn và sao chép câu hỏi. Nhận biết rõ trạng thái đang xử lý và lỗi nguồn. *Mã và test xong. Chờ dịch vụ thật và thử iPhone.* |
@@ -227,9 +227,9 @@ Lộ trình thao tác cho người mới. Trạng thái từng mốc ở [mục 
 
 ### Mốc 2. Kiểm tra máy và dịch vụ song song (VT02, VT03)
 
-1. Mở thư mục dự án trong VS Code hoặc Antigravity. Chạy `git --version`, `node --version`, `npm --version`. Chọn chung phiên bản Node tương thích với Vite và Fastify. *Đã đo trên máy phát triển.*
+1. Mở thư mục dự án trong VS Code hoặc Antigravity. Chạy `git --version`, `node --version`, `npm --version`. Chọn chung phiên bản Node tương thích với Vite và NestJS. *Đã đo trên máy phát triển.*
 2. Đăng nhập AWS Sandbox theo hướng dẫn BTC. Ghi vùng, quyền EC2 AL2023, phương án HTTPS công khai, quyền gọi mô hình Bedrock và hạn mức đến 11/12. Một yêu cầu phân tích câu mô phỏng trả kết quả thật xác nhận quyền mô hình: `npm run check:services -w apps/api`.
-3. Kiểm tra Google Places riêng với AWS Sandbox. Nếu có quyền, thử một địa chỉ công khai và lưu kết quả. Nếu thiếu quyền, vẫn có nút "Mở bản đồ" và hiện rõ địa điểm chưa đối chiếu tự động.
+3. Kiểm tra Vietmap riêng với AWS Sandbox. Nếu có quyền, thử một địa chỉ công khai và lưu kết quả. Nếu thiếu quyền, vẫn có nút "Mở bản đồ" và hiện rõ địa điểm chưa đối chiếu tự động.
 4. Chọn ít nhất một nguồn tin có trạng thái tuyển đọc được. Lưu thông tin tối thiểu được phép dùng gồm tên công ty, vị trí, trạng thái hoặc hạn nộp, link và ngày kiểm tra. Khi nguồn sàn hạn chế truy cập, dùng thông tin ứng viên cung cấp và nêu nguồn trong kết quả.
 
 **Qua mốc khi** nhóm biết dịch vụ nào gọi thật được, phần nào cần thêm quyền và phần nào vẫn phát triển bằng dữ liệu mô phỏng.
@@ -237,7 +237,7 @@ Lộ trình thao tác cho người mới. Trạng thái từng mốc ở [mục 
 ### Mốc 3. Dựng bản chạy đầu tiên trên máy (VT04–VT06)
 
 1. Viết ví dụ dữ liệu gửi và nhận trước khi code. *Xong, trong `design.md`.*
-2. Tạo khung React + Vite và Fastify bằng TypeScript. Chạy `GET /healthz`, mở web, thử gửi một yêu cầu. *Xong.*
+2. Tạo khung React + Vite và API bằng TypeScript (nay là NestJS). Chạy `GET /healthz`, mở web, thử gửi một yêu cầu. *Xong.*
 3. Nối form đến API bằng phản hồi mô phỏng, gắn nhãn mô phỏng. *Xong.*
 4. Thêm trạng thái đang xử lý, lỗi và thiếu dữ kiện. Thử gửi rỗng, nhập sai địa chỉ, nguồn lỗi. Viết README để người khác chạy được. *Xong, xem [mục 6](#6-chạy-trên-máy).*
 
@@ -255,7 +255,7 @@ Lộ trình thao tác cho người mới. Trạng thái từng mốc ở [mục 
 
 ### Mốc 5. Đưa bản thử lên mạng và kiểm tra (VT12–VT17)
 
-1. Đưa bản thử lên EC2 AL2023. Cấu hình Caddy phục vụ HTTPS qua cổng `443`, chuyển yêu cầu API vào Fastify nghe nội bộ, cấu hình dịch vụ tự khởi động lại. Tạo database và role PostgreSQL riêng trên máy chủ.
+1. Đưa bản thử lên EC2 AL2023. Cấu hình Caddy phục vụ HTTPS qua cổng `443`, chuyển yêu cầu API vào NestJS nghe nội bộ, cấu hình dịch vụ tự khởi động lại. Tạo database và role PostgreSQL riêng trên máy chủ.
 2. Từ iPhone qua 4G/5G, mở đúng đường dẫn dự kiến nộp. Thử nhập lời mời mới, mở bản đồ, sao chép câu hỏi. Nhờ một người ngoài nhóm làm thử mà không hướng dẫn.
 3. Chạy bốn ca đối chứng và các lỗi nguồn. Với k6, tạo tải trên môi trường thử dùng phản hồi AI/Maps mô phỏng. Ghi p95 và tỷ lệ lỗi. Gọi AI thật với số lượt giới hạn để đo thời gian chờ thực tế.
 4. Ghi số người chọn đúng bước tiếp theo và bước họ bị vướng. Sửa lỗi luồng chính trước, rồi mới thêm Street View, đọc ảnh hoặc Phím tắt.
@@ -283,7 +283,7 @@ npm run dev:web    # Web tại http://127.0.0.1:5173 (chuyển /api sang API)
 
 Mở http://127.0.0.1:5173, chọn một ca mẫu rồi bấm "Phân tích lời mời". Kiểm tra API: http://127.0.0.1:5173/healthz.
 
-**Biến môi trường** (xem `.env.example`, đặt trong `.env` ở thư mục gốc, Git bỏ qua tệp này): `PORT`, `HOST`, `LOG_LEVEL`, `DATABASE_URL`, `HISTORY_TTL_DAYS`, `HISTORY_MAX_PER_DEVICE`, `COOKIE_SECURE`, `RATE_LIMIT_PER_MINUTE`, `TRUST_PROXY`, `BEDROCK_MODEL_ID`, `AWS_REGION`, `GOOGLE_MAPS_API_KEY`. Không đặt khóa AWS vào `.env`: SDK dùng IAM role (EC2) hoặc đăng nhập SSO.
+**Biến môi trường** (xem `.env.example`, đặt trong `.env` ở thư mục gốc, Git bỏ qua tệp này): `PORT`, `HOST`, `LOG_LEVEL`, `DATABASE_URL`, `HISTORY_TTL_DAYS`, `HISTORY_MAX_PER_DEVICE`, `COOKIE_SECURE`, `RATE_LIMIT_PER_MINUTE`, `TRUST_PROXY`, `BEDROCK_MODEL_ID`, `AWS_REGION`, `VIETMAP_API_KEY`, `VIETMAP_MAX_REQUESTS_PER_MINUTE`, `VIETMAP_MAX_REQUESTS_PER_DAY`, `VIETMAP_MAX_CONCURRENT_REQUESTS`, `GEOCODING_SUSPICIOUS_DISTANCE_KM`. Không đặt khóa AWS vào `.env`: SDK dùng IAM role (EC2) hoặc đăng nhập SSO.
 
 **Lịch sử tra cứu (PostgreSQL, tùy chọn).** Không đặt `DATABASE_URL` thì API chạy không lịch sử và web ẩn tab Lịch sử. Để bật:
 
@@ -305,7 +305,7 @@ npm run typecheck
 npm test            # API 90 test, web 18 test
 npm run build
 npm run openapi -w apps/api          # sinh lại docs/openapi.json sau khi đổi shared/schemas.ts
-npm run check:services -w apps/api   # gọi thử Bedrock và Places nếu đã cấu hình
+npm run check:services -w apps/api   # gọi thử Bedrock và Vietmap nếu đã cấu hình
 ```
 
 **Cấu trúc**
@@ -313,7 +313,7 @@ npm run check:services -w apps/api   # gọi thử Bedrock và Places nếu đã
 | Thư mục | Nội dung |
 |---|---|
 | `shared/` | Kiểu TypeScript và JSON Schema của API. |
-| `apps/api/` | Fastify. `extract.ts` và `verify.ts` (luồng), `requirements.ts` (luật nhận diện yêu cầu), `ai.ts` (Bedrock), `places.ts` (Google Places), `history.ts` và `db.ts` (PostgreSQL), `openapi.ts`, `migrations/` (SQL). |
+| `apps/api/` | NestJS. `src/viec-that/` (controller, `extract.ts`, `verify.ts`, `location.ts`, `requirements.ts`, `ai.ts` Bedrock, lịch sử PostgreSQL), `src/geocoding/` (Vietmap), `migrations/` (SQL), `test/harness.ts`. Xem [`apps/api/README.md`](apps/api/README.md). |
 | `apps/web/` | React + Vite. |
 | `data/demo/` | Bốn ca mô phỏng. `expected` chỉ dùng trong kiểm thử, không đi vào code xử lý hay gửi cho AI. |
 | `data/evaluation/` | 20 lời mời ngoài bốn ca demo để kiểm thử luật dự phòng. |
@@ -366,13 +366,13 @@ Máy này chưa có thông tin xác thực AWS. Việc cần làm, theo thứ t�
 | HTTPS (tên miền, chứng chỉ) | _chưa có_ |
 | Quota và hạn Sandbox | _chưa có_ |
 
-### Google Places và nguồn tin (VT03)
+### Địa điểm (Vietmap) và nguồn tin (VT03)
 
-**Tạm hoãn gọi Places thật.** Google Cloud hiển thị Places API (New) đã bật, tài khoản thanh toán đang hoạt động và khóa đã giới hạn đúng API. Gọi từ máy phát triển vẫn trả `403 PERMISSION_DENIED`.
+**Đã chuyển sang Vietmap (24/11/2026).** Trước đó Google Places API (New) đã bật, thanh toán hoạt động và khóa giới hạn đúng API, nhưng gọi từ máy phát triển vẫn trả `403 PERMISSION_DENIED`. Bản NestJS dùng Vietmap và không còn mã Google Places.
 
-1. Google Cloud: bật **Places API (New)** và thanh toán, đặt **ngân sách và cảnh báo**.
-2. Tạo API key, giới hạn chỉ cho Places API (New), và theo IP máy chủ khi đã có IP cố định.
-3. Đặt `GOOGLE_MAPS_API_KEY` rồi chạy `npm run check:services -w apps/api`. Dòng `Google Places (VT03)` phải là `OK` với địa chỉ thử `Dinh Độc Lập, 135 Nam Kỳ Khởi Nghĩa, Quận 3`.
+1. Đăng ký khóa Vietmap, ghi hạn mức miễn phí và điều khoản sử dụng.
+2. Đặt `VIETMAP_API_KEY` và giữ các giới hạn `VIETMAP_MAX_REQUESTS_PER_MINUTE`, `VIETMAP_MAX_REQUESTS_PER_DAY` trong hạn mức.
+3. Chạy `npm run check:services -w apps/api`. Dòng `Vietmap (VT03)` phải là `OK` với địa chỉ thử `135 Nam Kỳ Khởi Nghĩa, Quận 1, Hồ Chí Minh`.
 4. Chưa có khóa thì web vẫn chạy: địa điểm hiện "Chưa đối chiếu tự động" kèm nút "Mở bản đồ".
 
 **Nguồn tin đăng (quyết định đã chốt trong mã).**
@@ -388,8 +388,8 @@ Nhóm cần xác nhận quyết định này. Muốn có nguồn tin tự độn
 
 | Mục cần ghi | Giá trị |
 |---|---|
-| Khóa Places và ngân sách | Đã kiểm tra quyền theo API và IP. Chưa xác nhận ngân sách hoặc hạn mức. |
-| Kết quả `check:services` | `403 PERMISSION_DENIED`. Tạm hoãn điều tra phía Google Cloud. |
+| Khóa Vietmap và hạn mức | _chưa có_ |
+| Kết quả `check:services` | _chưa có_ (Google Places trước đây: `403 PERMISSION_DENIED`) |
 | Nguồn tin tự động được phép | _chưa chọn_ (đang dùng dữ kiện người dùng nhập) |
 
 ### Kiểm thử tải local (VT14)
@@ -428,14 +428,14 @@ Mở thư mục gốc `MoMo tech` trong Kiro IDE để agent thấy tài liệu 
 | [Dữ liệu demo](data/demo/README.md) và [`cases.json`](data/demo/cases.json) | Bốn ca mô phỏng, kết quả mong đợi, mẫu TopCV và giới hạn sử dụng nguồn. |
 
 **Quy tắc khi giao việc**
-- Giữ TypeScript, React + Vite và Fastify. Kết quả nêu riêng trạng thái tin đăng, địa điểm, người liên hệ và yêu cầu cần xác minh. Giữ lời mời và đoạn trích có nguồn. Link sàn việc làm dùng theo quyền của nguồn.
+- Giữ TypeScript, React + Vite và NestJS. Kết quả nêu riêng trạng thái tin đăng, địa điểm, người liên hệ và yêu cầu cần xác minh. Giữ lời mời và đoạn trích có nguồn. Link sàn việc làm dùng theo quyền của nguồn.
 - Gắn nhãn mô phỏng cho dữ liệu nguồn giả lập, dùng `expected` làm đáp án kiểm thử và giữ nó ở phía kiểm thử. Khi gọi AI thật, chỉ gửi đầu vào và dữ kiện nguồn hợp lệ.
 - Ca nghiệm thu đầu tiên là VT-DEMO-01: người dùng nhập lời mời, sửa dữ kiện, xem ba kết quả (tin hết hạn, chưa xác nhận công ty tại địa chỉ hẹn, câu yêu cầu đóng phí) và sao chép được câu hỏi xác minh. Kiểm tra thêm ca địa điểm khớp và ca nguồn không truy cập được.
 - Cuối mỗi lượt ghi: tệp đã sửa, lệnh chạy và kiểm thử thực sự đã chạy, kết quả, và việc còn mở.
 
 **Bàn giao tiếp**
 - **VT02:** chuyển cho Kiro vùng AWS, model ID được phép gọi, kết quả `check:services` và phương án HTTPS trên EC2. Cấu hình quyền ở môi trường máy chủ, dùng tên biến môi trường hoặc IAM role.
-- **VT03:** ghi cách truy cập nguồn tin được phép, các trường được dùng và trạng thái Google Places. Giữ phương án mở bản đồ và hiện "Chưa đối chiếu tự động" khi thiếu quyền.
+- **VT03:** ghi cách truy cập nguồn tin được phép, các trường được dùng và trạng thái Vietmap. Giữ phương án mở bản đồ và hiện "Chưa đối chiếu tự động" khi thiếu quyền.
 - **VT12–VT17:** triển khai, thử trên iPhone qua mạng ngoài nhóm và chốt bản nộp.
 - **VT18–VT20:** bàn giao đường dẫn HTTPS, mã phiên bản Git, kết quả kiểm thử, README khai báo nguồn dữ liệu và AI, ZIP, PDF hướng dẫn, slide và video. Hạn nộp **23:59:59 ngày 03/12/2026 GMT+7**. Duy trì bản nộp đến hết **11/12/2026**.
 
@@ -469,7 +469,7 @@ Bản nháp này ghi theo những gì có trong mã ngày 22/11/2026. Ô ghi *c�
 | Tin TopCV `j1095867` | Chỉ ghi link và trạng thái tối thiểu để kiểm tra thủ công. Không sao chép nội dung, không đưa vào mã. |
 | VietJobs, EMSCAD | Chỉ là tài liệu tham khảo. Chưa tải và chưa đưa vào ZIP. |
 | Google Maps URLs | Nút "Mở bản đồ" tạo link tìm kiếm. Không cần khóa API. |
-| Google Places API (New) | Có mã client, chưa gọi thật được. |
+| Vietmap | Tìm địa điểm theo tên công ty và địa chỉ. Có mã client, chưa gọi thật. Cần rà điều khoản sử dụng. |
 
 ### Thư viện chính
 
@@ -477,14 +477,18 @@ Phiên bản lấy từ `package-lock.json`.
 
 | Gói | Phiên bản | Giấy phép |
 |---|---|---|
-| fastify | 5.12.8 | MIT |
+| @nestjs/core, common, platform-express | 12.6.0 | MIT |
+| @nestjs/config | 12.1.1 | MIT |
+| express | 5.3.0 | MIT |
+| reflect-metadata | 0.2.2 | Apache-2.0 |
+| rxjs | 7.8.2 | Apache-2.0 |
 | react, react-dom | 18.3.1 | MIT |
 | vite | 5.4.21 | MIT |
 | pg | 8.23.1 | MIT |
 | @aws-sdk/client-bedrock-runtime | 3.1175.0 | Apache-2.0 |
-| typescript | 5.9.3 | Apache-2.0 |
+| typescript | 5.9.3 (web), 6.0.3 (API) | Apache-2.0 |
 | tsx | 4.23.15 | MIT |
-| vitest (kiểm thử) | 2.1.9 | MIT |
+| vitest (kiểm thử) | 2.1.9 (web), 4.1.12 (API) | MIT |
 | @electric-sql/pglite (kiểm thử) | 0.5.17 | Apache-2.0 |
 
 Hình ảnh và biểu tượng: `apps/web/public/favicon.png`. Nguồn gốc: *cần nhóm xác nhận*.

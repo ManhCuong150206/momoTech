@@ -6,10 +6,11 @@ After=network.target
 Type=simple
 User=viecthat
 Group=viecthat
-WorkingDirectory=/opt/viec-that
+# Chạy trong apps/api để tsx đọc apps/api/tsconfig.json (bật decorator cho NestJS).
+WorkingDirectory=/opt/viec-that/apps/api
 Environment=NODE_ENV=production
 EnvironmentFile=/etc/viec-that/api.env
-ExecStart=/usr/bin/node-24 --import tsx apps/api/src/server.ts
+ExecStart=/usr/bin/node-24 --import tsx src/main.ts
 Restart=on-failure
 RestartSec=5s
 NoNewPrivileges=true

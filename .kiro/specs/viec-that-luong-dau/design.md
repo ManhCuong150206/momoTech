@@ -3,16 +3,16 @@
 ## Kiến trúc
 
 ```
-Safari / trình duyệt ── Vite dev (5173) ──proxy /api, /healthz──▶ Fastify (127.0.0.1:3000)
+Safari / trình duyệt ── Vite dev (5173) ──proxy /api, /healthz──▶ NestJS (127.0.0.1:3000)
                                                                    ├─ extract.ts   (luật + fixtures)
                                                                    ├─ verify.ts    (luật trên fixtures)
                                                                    └─ demo-data.ts (data/demo/cases.json)
 shared/contract.ts   kiểu TypeScript dùng chung
-shared/schemas.ts    JSON Schema, Fastify dùng để kiểm tra vào và tuần tự hóa ra
+shared/schemas.ts    JSON Schema, API dùng Ajv để kiểm tra đầu vào, test kiểm tra đầu ra
 ```
 
 - Web gọi API cùng origin qua proxy của Vite, nên không cần CORS.
-- `extract.ts` và `verify.ts` là điểm thay thế ở giai đoạn sau. VT07 thay `extract` bằng Bedrock. VT08/VT09 thay phần đọc `fixtures` bằng Places và nguồn tin. Hình dạng phản hồi giữ nguyên.
+- `extract.ts` và `verify.ts` là điểm thay thế ở giai đoạn sau. VT07 thay `extract` bằng Bedrock. VT08/VT09 thay phần đọc `fixtures` bằng Vietmap và nguồn tin. Hình dạng phản hồi giữ nguyên.
 - Ca mô phỏng được chọn theo `jobUrl` khớp chính xác với `cases.json`. Không khớp thì `job` là `not_checked`.
 - Ngày kiểm tra ở chế độ mô phỏng là `demoAsOf` (2026-11-21) để kết quả không đổi theo ngày chạy.
 - Địa chỉ đã sửa khác địa chỉ của ca mô phỏng thì bản đồ mô phỏng không áp dụng, `location` là `not_checked` kèm thông báo.
@@ -173,20 +173,20 @@ Trả `{ "cases": [{ "id", "title", "kind": "simulated", "input": { "invitationT
 
 ## Chế độ live (VT07 đến VT11)
 
-Mã: `apps/api/src/ai.ts` (Bedrock), `places.ts` (Google Places), `extract.ts` (`extractLive`), `verify.ts` (`verifyLive`).
+Mã (trong `apps/api/src/`): `viec-that/ai.ts` và `ai.service.ts` (Bedrock), `geocoding/` (Vietmap), `viec-that/location.ts` (đối chiếu địa điểm), `viec-that/extract.ts` (`extractLive`), `viec-that/verify.ts` (`verifyLive`).
 
 ```
 extract live:  lời mời ──▶ Bedrock Converse (tool bắt buộc) ──▶ kiểm tra đoạn trích và phủ định rõ ràng
                       └──▶ luật cố định (phí, giấy tờ, mã xác thực…) ──▶ ưu tiên đoạn trích của luật khi trùng loại, AI bổ sung loại còn thiếu
 verify live:   dữ kiện đã xác nhận ──▶ job: dữ kiện người dùng nhập + ngày hôm nay (giờ VN)
-                                  └──▶ location: Places Text Search ──▶ evaluatePlaces
+                                  └──▶ location: Vietmap (theo công ty + địa chỉ) ──▶ evaluateLocationLive
                                   └──▶ invitation + guidance: luật trên các kết quả trên
 ```
 
 - `VerifyRequest.jobPosting` (tùy chọn): `{ jobCode, postedOn, closesOn, closed }`. Ngày dạng `YYYY-MM-DD`.
 - `HealthResponse.capabilities`: `{ ai, places }` cho web biết dịch vụ nào đã bật.
 - `RequirementKind` hỗ trợ `document_request`, `credential_request` và `other_request`. `FieldOrigin` hỗ trợ `ai`.
-- Cấu hình: `BEDROCK_MODEL_ID`, `AWS_REGION`, `GOOGLE_MAPS_API_KEY`. Thông tin xác thực AWS lấy từ chuỗi mặc định (IAM role trên EC2, SSO trên máy cá nhân). Không đặt khóa AWS vào `.env`.
+- Cấu hình: `BEDROCK_MODEL_ID`, `AWS_REGION`, `VIETMAP_API_KEY` và các giới hạn `VIETMAP_MAX_*`. Thông tin xác thực AWS lấy từ chuỗi mặc định (IAM role trên EC2, SSO trên máy cá nhân). Không đặt khóa AWS vào `.env`.
 - Kiểm tra dịch vụ thật: `npm run check:services -w apps/api` (xem mục 7 của `README.md`).
 
 Quyết định: không thu thập trang của sàn việc làm vì điều khoản của TopCV và LinkedIn hạn chế khai thác tự động. Nguồn tin đăng là dữ kiện người dùng nhập. Tin trên trang tuyển dụng của chính doanh nghiệp có thể thêm sau khi nhóm rà quyền từng nguồn.
@@ -257,5 +257,5 @@ Trạng thái xử lý: nút đổi chữ và bị khóa khi đang gọi API. L�
 ## Chiến lược kiểm thử
 
 - API (`apps/api/test`): chạy cả bốn ca qua `extract` rồi `verify`, so `jobStatus`, `locationStatus`, `contactStatus`, `invitationStatus` và `evidenceQuotes` với `expected`. Phản hồi được kiểm tra bằng Ajv theo schema. Có ca lỗi 400 (kể cả lời mời chỉ có khoảng trắng), 404, 422, 429, 503. `docs/openapi.json` được so với schema hiện tại và mọi đường dẫn trong đó phải có trên API.
-- Web (`apps/web/test`): dựng giao diện với `fetch` nối vào API thật (Fastify inject). Chạy VT-DEMO-01 đến bước sao chép, VT-DEMO-02, VT-DEMO-04, gửi rỗng và lỗi mạng.
+- Web (`apps/web/test`): dựng giao diện với `fetch` nối vào API NestJS thật (`apps/api/test/harness.ts`, nghe trên 127.0.0.1). Chạy VT-DEMO-01 đến bước sao chép, VT-DEMO-02, VT-DEMO-04, gửi rỗng và lỗi mạng.
 - Câu hướng dẫn so theo mẫu và từ khóa, không so từng chữ với `expected`.

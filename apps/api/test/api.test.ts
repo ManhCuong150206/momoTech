@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import Ajv from 'ajv';
-import { buildApp } from '../src/app.js';
-import { DEFAULT_CASES_PATH, type DemoCase } from '../src/demo-data.js';
+import { Ajv } from 'ajv';
+import { buildApp } from './harness.js';
+import { DEFAULT_CASES_PATH, type DemoCase } from '../src/viec-that/demo-data.js';
 import {
   extractResponseSchema,
   healthResponseSchema,

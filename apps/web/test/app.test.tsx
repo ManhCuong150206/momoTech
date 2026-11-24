@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../src/App';
-import { buildApp } from '../../api/src/app';
+import { buildApp } from '../../api/test/harness';
 
 // fetch của trình duyệt được nối vào API thật (Fastify inject), dùng dữ liệu cases.json.
 const api = buildApp();

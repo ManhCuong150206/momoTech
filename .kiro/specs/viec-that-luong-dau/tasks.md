@@ -43,3 +43,11 @@
 - [x] 31. Bộ 20 lời mời ngoài ca demo cho luật dự phòng (`data/evaluation/`)
 - [ ] 32. Nhóm duyệt các điểm còn mở ở mục 7 của `docs/API-CONTRACT.md`
 - [ ] 33. Triển khai EC2 và HTTPS công khai (VT12), đo k6 trên bản triển khai (VT14)
+
+## Chuyển API sang NestJS (24/11/2026)
+
+- [x] 34. Gộp nhánh `BE` và thay `apps/api` (Fastify) bằng NestJS, dùng chung `shared/` và `data/demo/cases.json`
+- [x] 35. Đưa Bedrock (VT07), `HOST`, `TRUST_PROXY`, `DELETE /api/v1/history/:id`, `?limit=` và `HISTORY_MAX_PER_DEVICE` sang NestJS
+- [x] 36. Địa điểm dùng Vietmap thay Google Places (VT08)
+- [x] 37. `test/harness.ts` cho test API và web, chuyển các test cũ sang NestJS
+- [ ] 38. Gọi Vietmap thật bằng `npm run check:services` khi có khóa

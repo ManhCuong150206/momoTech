@@ -3,7 +3,7 @@
 Tài liệu này mô tả ba endpoint của luồng đầu tiên: `GET /healthz`, `POST /api/v1/invitations/extract` và `POST /api/v1/invitations/verify`. Lịch sử tra cứu và `GET /api/v1/demo/cases` được mô tả trong [design.md](../.kiro/specs/viec-that-luong-dau/design.md).
 
 - Kiểu TypeScript: [`shared/contract.ts`](../shared/contract.ts). JSON Schema (draft-07): [`shared/schemas.ts`](../shared/schemas.ts). OpenAPI 3.1: [`openapi.json`](openapi.json), sinh từ schema bằng `npm run openapi -w apps/api`. Khi tài liệu này và mã khác nhau, mã là nguồn sự thật và tài liệu cần sửa.
-- Mọi ví dụ JSON dưới đây lấy từ phản hồi thật của API (Fastify `inject`, mã ở commit `6a86e78`) với ca **VT-DEMO-01** trong [`data/demo/cases.json`](../data/demo/cases.json).
+- Mọi ví dụ JSON dưới đây lấy từ phản hồi thật của API (ban đầu chạy trên Fastify ở commit `6a86e78`, đã kiểm lại trên NestJS ngày 24/11/2026) với ca **VT-DEMO-01** trong [`data/demo/cases.json`](../data/demo/cases.json).
 - **VT-DEMO-01 là dữ liệu mô phỏng.** Công ty, địa chỉ, tin đăng và bản đồ đều giả lập. Phản hồi có `simulated: true` và web phải hiện nhãn "Dữ liệu mô phỏng".
 
 ## 1. Quy ước chung
@@ -15,7 +15,7 @@ Tài liệu này mô tả ba endpoint của luồng đầu tiên: `GET /healthz`
 | Trường lạ | Bị từ chối (`additionalProperties: false`), trả 400. Không ép kiểu (`"true"` không phải `true`). |
 | Trường tùy chọn | `jobUrl`, `meetingAddress`, `jobPosting` có thể bỏ hoặc gửi `null`. Chuỗi chỉ có khoảng trắng được coi như `null`. |
 | Ngày | `YYYY-MM-DD`, hiểu theo giờ Việt Nam (`Asia/Ho_Chi_Minh`). `healthz.time` là ISO 8601 UTC. |
-| Chế độ `mode` | `simulated`: dùng `fixtures` của ca mẫu, ngày kiểm tra cố định là `demoAsOf` = `2026-11-21`. `live`: dùng AI, Google Places và dữ kiện người dùng nhập, ngày kiểm tra là hôm nay. |
+| Chế độ `mode` | `simulated`: dùng `fixtures` của ca mẫu, ngày kiểm tra cố định là `demoAsOf` = `2026-11-21`. `live`: dùng AI, Vietmap và dữ kiện người dùng nhập, ngày kiểm tra là hôm nay. |
 | Văn bản hiển thị | `basis`, `nextStep`, `suggestedQuestion`, `notices` là tiếng Việt để hiện thẳng cho người dùng. Web không phân tích các chuỗi này, chỉ dựa vào `status` và `kind`. |
 | Riêng tư | Nhật ký máy chủ chỉ ghi phương thức, đường dẫn và mã trạng thái, không ghi nội dung lời mời. |
 
@@ -43,16 +43,16 @@ Mọi lỗi có cùng một dạng. `details` chỉ có khi giúp người gọi
 | HTTP | `error.code` | Khi nào | `details` |
 |---|---|---|---|
 | 400 | `VALIDATION_ERROR` | Thiếu trường, sai kiểu, chuỗi rỗng hoặc chỉ có khoảng trắng, vượt giới hạn, trường lạ, `mode` sai. | Mảng lỗi Ajv (`instancePath`, `keyword`, `params`, `message`). |
-| 400 (413 khi thân quá lớn) | `VALIDATION_ERROR` | JSON hỏng, hoặc thân vượt giới hạn của Fastify (mặc định 1 MiB). `message` là "Yêu cầu không hợp lệ." Gửi `text/plain` thì thân bị đọc như chuỗi và trả 400 do schema (`must be object`). | Không có. |
+| 400 (413 khi thân quá lớn) | `VALIDATION_ERROR` | JSON hỏng, hoặc thân vượt giới hạn của Express (mặc định 100 KB). `message` là "Yêu cầu không hợp lệ." Gửi `text/plain` thì thân được đọc như chuỗi và trả 400 do schema (`must be object`). | Không có. |
 | 404 | `NOT_FOUND` | Đường dẫn không tồn tại, kể cả gọi sai phương thức (ví dụ `GET /api/v1/invitations/extract`). | Không có. |
 | 422 | `QUOTE_NOT_IN_SOURCE` | `verify`: một `quote` trong `confirmed.requirements` không nằm trong `invitationText`. | `{ "quotes": [ ... ] }` liệt kê đoạn sai. |
-| 429 | `RATE_LIMITED` | Vượt giới hạn yêu cầu mỗi phút mỗi IP cho `POST /api/v1/invitations/*`. Có header `Retry-After: 60`. Tắt khi giới hạn là 0. | Không có. |
+| 429 | `RATE_LIMITED` | Mỗi IP gọi `POST /api/v1/invitations/*` quá `RATE_LIMIT_PER_MINUTE` lần (mặc định 30) trong 60 giây, hoặc quá 5 lần trong 10 giây. `Retry-After` là số giây còn phải chờ. Đặt giới hạn bằng 0 thì tắt cả hai. | Không có. |
 | 503 | `HISTORY_DISABLED` | `verify` có `save: true` khi máy chủ chưa cấu hình `DATABASE_URL`. | Không có. |
 | 500 | `INTERNAL_ERROR` | Lỗi không lường trước. Thông báo chung, không lộ nội dung. | Không có. |
 
 `SOURCE_MODE_UNSUPPORTED` có trong enum của `ErrorCode` nhưng hiện không endpoint nào trả mã này (xem mục 7).
 
-Lỗi dịch vụ ngoài (Bedrock, Places) **không** trả lỗi HTTP. Phần bị ảnh hưởng hạ cấp thành `unavailable` hoặc luật cố định, và có dòng giải thích trong `notices`.
+Lỗi dịch vụ ngoài (Bedrock, Vietmap) **không** trả lỗi HTTP. Phần bị ảnh hưởng hạ cấp thành `unavailable` hoặc luật cố định, và có dòng giải thích trong `notices`.
 
 ## 3. Trạng thái của bốn phần kết quả
 
@@ -75,7 +75,7 @@ Kèm theo: `source { label, url, simulated }`, `checkedOn`, `details { company, 
 |---|---|---|
 | `matched` | Thấy đúng công ty tại địa chỉ hẹn. | Nguồn bản đồ ghi tên công ty trùng công ty đã xác nhận và địa chỉ trùng địa chỉ hẹn. |
 | `company_unconfirmed` | Địa chỉ có thật nhưng chưa thấy công ty ở đó. | Chỉ thấy tòa nhà, không gian làm việc dùng chung, công ty khác ở địa chỉ đó, hoặc (`live`) không có kết quả khớp. |
-| `unavailable` | Dịch vụ bản đồ lỗi. | Chỉ ở `live`, khi gọi Places thất bại. |
+| `unavailable` | Dịch vụ bản đồ lỗi. | Chỉ ở `live`, khi gọi Vietmap thất bại (mạng, khóa sai, vượt hạn mức). |
 | `not_checked` | Chưa đối chiếu tự động. | Không có địa chỉ hẹn (`mapUrl = null`), địa chỉ đã sửa khác địa chỉ của ca mô phỏng, hoặc (`live`) chưa cấu hình Google Maps. |
 
 Kèm theo: `source`, `checkedOn`, `place { displayName, address }` là nơi nguồn bản đồ tìm thấy, `mapUrl` là link Google Maps tìm theo địa chỉ hẹn để người dùng tự mở. `mapUrl` có mặt mỗi khi có địa chỉ hẹn, kể cả khi `not_checked`.
@@ -135,7 +135,7 @@ Không có tham số. Luôn trả 200 khi tiến trình chạy.
 | `history` | `{ enabled, ttlDays }` | `enabled = false` khi chưa đặt `DATABASE_URL`. Web ẩn mục Lịch sử. |
 | `capabilities` | `{ ai, places }` | Dịch vụ ngoài đã cấu hình. `false` thì chế độ `live` hạ cấp phần đó. |
 
-Phản hồi 200 (máy phát triển, chưa cấu hình cơ sở dữ liệu, Bedrock và Places):
+Phản hồi 200 (máy phát triển, chưa cấu hình cơ sở dữ liệu, Bedrock và Vietmap). `capabilities.places` là `true` khi đã có `VIETMAP_API_KEY`:
 
 ```json
 {
@@ -208,11 +208,12 @@ Khi `jobUrl` không thuộc ca mẫu nào, `company` và `role` là `not_found` 
 
 ### Lỗi
 
-400, `invitationText` rỗng:
+400, `invitationText` rỗng. Bộ kiểm tra báo mọi lỗi cùng lúc nên có cả `minLength` và `pattern`:
 
 ```json
 { "error": { "code": "VALIDATION_ERROR", "message": "Dữ liệu gửi lên không hợp lệ.", "details": [
-  { "instancePath": "/invitationText", "schemaPath": "#/properties/invitationText/minLength", "keyword": "minLength", "params": { "limit": 1 }, "message": "must NOT have fewer than 1 characters" }
+  { "instancePath": "/invitationText", "schemaPath": "#/properties/invitationText/minLength", "keyword": "minLength", "params": { "limit": 1 }, "message": "must NOT have fewer than 1 characters" },
+  { "instancePath": "/invitationText", "schemaPath": "#/properties/invitationText/pattern", "keyword": "pattern", "params": { "pattern": "\\S" }, "message": "must match pattern \"\\S\"" }
 ] } }
 ```
 
