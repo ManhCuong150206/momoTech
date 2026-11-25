@@ -3,7 +3,7 @@
   "info": {
     "title": "Việc Thật API",
     "version": "0.1.0",
-    "description": "Đối chiếu lời mời việc làm: tin đăng, địa điểm, người liên hệ và yêu cầu trong lời mời. Ví dụ và quy tắc trạng thái: docs/API-CONTRACT.md."
+    "description": "Đối chiếu lời mời việc làm: tin đăng, địa điểm, người liên hệ và yêu cầu trong lời mời. Ví dụ và quy tắc trạng thái: docs/API-CONTRACT.md. Ổn định hợp đồng: trong /api/v1 chỉ thêm trường tùy chọn hoặc giá trị enum mới, không đổi tên hay xóa. Client phải chấp nhận giá trị enum lạ. Thay đổi phá vỡ chuyển sang /api/v2 và tăng version."
   },
   "servers": [
     {
@@ -26,6 +26,16 @@
                 }
               }
             }
+          },
+          "405": {
+            "description": "METHOD_NOT_ALLOWED: đường dẫn có thật nhưng không nhận phương thức đã gửi. Header Allow liệt kê phương thức được phép.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -41,6 +51,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/DemoCasesResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "METHOD_NOT_ALLOWED: đường dẫn có thật nhưng không nhận phương thức đã gửi. Header Allow liệt kê phương thức được phép.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -75,6 +95,16 @@
           },
           "400": {
             "description": "VALIDATION_ERROR: dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "METHOD_NOT_ALLOWED: đường dẫn có thật nhưng không nhận phương thức đã gửi. Header Allow liệt kê phương thức được phép.",
             "content": {
               "application/json": {
                 "schema": {
@@ -133,6 +163,16 @@
           },
           "400": {
             "description": "VALIDATION_ERROR: dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "METHOD_NOT_ALLOWED: đường dẫn có thật nhưng không nhận phương thức đã gửi. Header Allow liệt kê phương thức được phép.",
             "content": {
               "application/json": {
                 "schema": {
@@ -221,6 +261,16 @@
               }
             }
           },
+          "405": {
+            "description": "METHOD_NOT_ALLOWED: đường dẫn có thật nhưng không nhận phương thức đã gửi. Header Allow liệt kê phương thức được phép.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "503": {
             "description": "HISTORY_DISABLED",
             "content": {
@@ -280,6 +330,16 @@
               }
             }
           },
+          "405": {
+            "description": "METHOD_NOT_ALLOWED: đường dẫn có thật nhưng không nhận phương thức đã gửi. Header Allow liệt kê phương thức được phép.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "503": {
             "description": "HISTORY_DISABLED",
             "content": {
@@ -330,6 +390,16 @@
               }
             }
           },
+          "405": {
+            "description": "METHOD_NOT_ALLOWED: đường dẫn có thật nhưng không nhận phương thức đã gửi. Header Allow liệt kê phương thức được phép.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
           "503": {
             "description": "HISTORY_DISABLED",
             "content": {
@@ -370,6 +440,16 @@
           },
           "400": {
             "description": "VALIDATION_ERROR: dữ liệu gửi lên không hợp lệ.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "METHOD_NOT_ALLOWED: đường dẫn có thật nhưng không nhận phương thức đã gửi. Header Allow liệt kê phương thức được phép.",
             "content": {
               "application/json": {
                 "schema": {
@@ -833,6 +913,33 @@
               },
               "closed": {
                 "type": "boolean"
+              }
+            }
+          },
+          "contact": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "sender": {
+                "type": "array",
+                "maxItems": 5,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 254
+                }
+              },
+              "official": {
+                "type": "array",
+                "maxItems": 5,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 254
+                }
               }
             }
           },
@@ -1790,8 +1897,8 @@
                 "enum": [
                   "VALIDATION_ERROR",
                   "QUOTE_NOT_IN_SOURCE",
-                  "SOURCE_MODE_UNSUPPORTED",
                   "NOT_FOUND",
+                  "METHOD_NOT_ALLOWED",
                   "HISTORY_DISABLED",
                   "RATE_LIMITED",
                   "INTERNAL_ERROR"

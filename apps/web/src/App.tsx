@@ -9,7 +9,11 @@ import type {
 } from '../../../shared/contract';
 import { api, ApiError } from './api';
 import History from './History';
-import { REQUIREMENT_LABEL, SAMPLE_LABEL } from './labels';
+import {
+  labelOf,
+  REQUIREMENT_LABEL,
+  SAMPLE_LABEL,
+} from './labels';
 import ResultView, { SimBadge } from './ResultView';
 
 type Step = 'input' | 'confirm' | 'result';
@@ -24,6 +28,10 @@ interface InputState {
   postedOn: string;
   closesOn: string;
   closed: boolean;
+  /** Email hoặc số điện thoại của người gửi, nếu không có trong lời mời. */
+  contactSender: string;
+  /** Email hoặc số điện thoại ghi trên trang tuyển dụng chính thức. */
+  contactOfficial: string;
 }
 
 const EMPTY_INPUT: InputState = {
@@ -34,7 +42,17 @@ const EMPTY_INPUT: InputState = {
   postedOn: '',
   closesOn: '',
   closed: false,
+  contactSender: '',
+  contactOfficial: '',
 };
+
+/** Tách danh sách email hoặc số điện thoại người dùng nhập, cách nhau bởi dấu phẩy, chấm phẩy hoặc xuống dòng. */
+const splitContacts = (value: string) =>
+  value
+    .split(/[,;\n]/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 5);
 
 interface ConfirmState {
   company: string;
@@ -182,6 +200,10 @@ export default function App() {
         invitationText: input.invitationText,
         jobUrl: input.jobUrl.trim() || null,
         jobPosting,
+        contact:
+          input.contactSender.trim() || input.contactOfficial.trim()
+            ? { sender: splitContacts(input.contactSender), official: splitContacts(input.contactOfficial) }
+            : null,
         save: historyOn && save,
         confirmed: {
           company: confirm.company.trim() || null,
@@ -328,6 +350,20 @@ export default function App() {
                 </label>
               </details>
             )}
+            <details className="disclosure">
+              <summary>Xác minh người liên hệ (nếu có)</summary>
+              <p className="note">
+                Mở trang tuyển dụng chính thức (LinkedIn, TopCV hoặc trang của công ty) và chép email hoặc số điện thoại liên hệ bạn thấy. Người liên hệ được xác minh khi trùng với người gửi lời mời.
+              </p>
+              <label>
+                Email hoặc số điện thoại của người gửi lời mời (nếu không có trong lời mời)
+                <input value={input.contactSender} onChange={(e) => updateInput({ contactSender: e.target.value })} />
+              </label>
+              <label>
+                Email hoặc số điện thoại trên trang tuyển dụng chính thức
+                <input value={input.contactOfficial} onChange={(e) => updateInput({ contactOfficial: e.target.value })} />
+              </label>
+            </details>
           </div>
 
           {cases.length > 0 && (
@@ -408,7 +444,7 @@ export default function App() {
                   }
                 />
                 <span>
-                  <strong>{REQUIREMENT_LABEL[r.kind]}</strong>
+                  <strong>{labelOf(REQUIREMENT_LABEL, r.kind)}</strong>
                   <q>{r.quote}</q>
                 </span>
               </label>

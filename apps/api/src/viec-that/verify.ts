@@ -1,5 +1,4 @@
 import type {
-  ContactResult,
   InvitationResult,
   InvitationStatus,
   JobResult,
@@ -21,6 +20,7 @@ import {
   mapUrlFor,
   type PlaceFinder,
 } from './location.js';
+import { evaluateContact } from './contact.js';
 import { quoteInText } from './text.js';
 
 // Đối chiếu mô phỏng (giai đoạn 1). Trạng thái được suy ra từ `fixtures` bằng luật,
@@ -178,14 +178,6 @@ function evaluateLocation(
   return { status, basis, source, checkedOn: asOf, place: placeInfo, mapUrl };
 }
 
-function evaluateContact(): ContactResult {
-  return {
-    status: 'unverified',
-    basis:
-      'Chưa có căn cứ về người liên hệ. Xác minh qua kênh tuyển dụng chính thức của công ty.',
-  };
-}
-
 function evaluateInvitation(
   job: JobResult,
   location: LocationResult,
@@ -201,6 +193,10 @@ function evaluateInvitation(
     status = 'caution';
     basis =
       'Lời mời yêu cầu một khoản phí. Cần xác minh trước khi chuyển tiền.';
+  } else if (job.status === 'expired') {
+    status = 'caution';
+    basis =
+      'Tin tuyển dụng đã hết hạn nhưng lời mời vẫn hẹn phỏng vấn. Cần xác minh vị trí còn tuyển qua kênh tuyển dụng chính thức trước khi đi gặp.';
   } else if (requirements.some((r) => r.kind === 'document_request')) {
     status = 'needs_verification';
     basis =
@@ -335,7 +331,7 @@ export function verifySimulated(
     );
   }
   const location = evaluateLocation(demo, req, asOf, notices);
-  const contact = evaluateContact();
+  const contact = evaluateContact(req.invitationText, req.contact);
   const hasAddress = !!req.confirmed.meetingAddress?.trim();
   const invitation = evaluateInvitation(
     job,
@@ -467,7 +463,7 @@ export async function verifyLive(
     today,
   );
   const notices = notice ? [notice] : [];
-  const contact = evaluateContact();
+  const contact = evaluateContact(req.invitationText, req.contact);
   const invitation = evaluateInvitation(
     job,
     location,

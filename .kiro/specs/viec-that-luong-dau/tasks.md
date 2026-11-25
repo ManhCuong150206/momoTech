@@ -51,3 +51,13 @@
 - [x] 36. Địa điểm dùng Vietmap thay Google Places (VT08)
 - [x] 37. `test/harness.ts` cho test API và web, chuyển các test cũ sang NestJS
 - [ ] 38. Gọi Vietmap thật bằng `npm run check:services` khi có khóa
+
+## Quyết định mục 7 của hợp đồng API (25/11/2026)
+
+- [x] 39. Câu hỏi gợi ý VT-DEMO-01 dùng "kênh tuyển dụng chính thức"
+- [x] 40. Tin hết hạn cho lời mời `caution`
+- [x] 41. `contact.verified` khi email hoặc số điện thoại người gửi trùng trang tuyển dụng chính thức, web có mục nhập
+- [x] 42. Xóa `SOURCE_MODE_UNSUPPORTED`
+- [x] 43. Chuẩn hóa URL trước khi so ca mẫu
+- [x] 44. 405 `METHOD_NOT_ALLOWED` kèm `Allow`, 413 có thông báo riêng
+- [x] 45. Quy ước ổn định hợp đồng, web hiện "Chưa rõ" cho enum lạ

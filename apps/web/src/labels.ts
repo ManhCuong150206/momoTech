@@ -70,3 +70,20 @@ export const INVITATION_TONE: Record<InvitationStatus, Tone> = {
   no_signal_observed: 'neutral',
   insufficient_information: 'neutral',
 };
+export const CONTACT_TONE: Record<ContactStatus, Tone> = {
+  verified: 'ok',
+  unverified: 'neutral',
+};
+
+/** Nhãn khi API trả giá trị mới mà bản web này chưa biết (hợp đồng v1 cho phép thêm enum). */
+export const UNKNOWN_LABEL = 'Chưa rõ';
+
+/** Tra nhãn, không lỗi khi gặp giá trị enum lạ. */
+export function labelOf(map: Record<string, string>, key: string): string {
+  return map[key] ?? UNKNOWN_LABEL;
+}
+
+/** Tra màu, giá trị lạ dùng màu trung tính. */
+export function toneOf(map: Record<string, Tone>, key: string): Tone {
+  return map[key] ?? 'neutral';
+}

@@ -43,14 +43,16 @@ Mọi lỗi có cùng một dạng. `details` chỉ có khi giúp người gọi
 | HTTP | `error.code` | Khi nào | `details` |
 |---|---|---|---|
 | 400 | `VALIDATION_ERROR` | Thiếu trường, sai kiểu, chuỗi rỗng hoặc chỉ có khoảng trắng, vượt giới hạn, trường lạ, `mode` sai. | Mảng lỗi Ajv (`instancePath`, `keyword`, `params`, `message`). |
-| 400 (413 khi thân quá lớn) | `VALIDATION_ERROR` | JSON hỏng, hoặc thân vượt giới hạn của Express (mặc định 100 KB). `message` là "Yêu cầu không hợp lệ." Gửi `text/plain` thì thân được đọc như chuỗi và trả 400 do schema (`must be object`). | Không có. |
-| 404 | `NOT_FOUND` | Đường dẫn không tồn tại, kể cả gọi sai phương thức (ví dụ `GET /api/v1/invitations/extract`). | Không có. |
+| 400 | `VALIDATION_ERROR` | JSON hỏng. `message` là "Yêu cầu không hợp lệ." Gửi `text/plain` thì thân được đọc như chuỗi và trả 400 do schema (`must be object`). | Không có. |
+| 413 | `VALIDATION_ERROR` | Thân vượt giới hạn của Express (mặc định 100 KB). `message` là "Nội dung gửi lên quá lớn." | Không có. |
+| 404 | `NOT_FOUND` | Đường dẫn không tồn tại. | Không có. |
+| 405 | `METHOD_NOT_ALLOWED` | Đường dẫn có thật nhưng sai phương thức (ví dụ `GET /api/v1/invitations/extract`). Header `Allow` liệt kê phương thức được phép. | Không có. |
 | 422 | `QUOTE_NOT_IN_SOURCE` | `verify`: một `quote` trong `confirmed.requirements` không nằm trong `invitationText`. | `{ "quotes": [ ... ] }` liệt kê đoạn sai. |
 | 429 | `RATE_LIMITED` | Mỗi IP gọi `POST /api/v1/invitations/*` quá `RATE_LIMIT_PER_MINUTE` lần (mặc định 30) trong 60 giây, hoặc quá 5 lần trong 10 giây. `Retry-After` là số giây còn phải chờ. Đặt giới hạn bằng 0 thì tắt cả hai. | Không có. |
 | 503 | `HISTORY_DISABLED` | `verify` có `save: true` khi máy chủ chưa cấu hình `DATABASE_URL`. | Không có. |
 | 500 | `INTERNAL_ERROR` | Lỗi không lường trước. Thông báo chung, không lộ nội dung. | Không có. |
 
-`SOURCE_MODE_UNSUPPORTED` có trong enum của `ErrorCode` nhưng hiện không endpoint nào trả mã này (xem mục 7).
+Mã `SOURCE_MODE_UNSUPPORTED` đã bị xóa ngày 25/11/2026 vì không endpoint nào trả (cả hai chế độ đều được hỗ trợ).
 
 Lỗi dịch vụ ngoài (Bedrock, Vietmap) **không** trả lỗi HTTP. Phần bị ảnh hưởng hạ cấp thành `unavailable` hoặc luật cố định, và có dòng giải thích trong `notices`.
 
@@ -84,8 +86,8 @@ Kèm theo: `source`, `checkedOn`, `place { displayName, address }` là nơi ngu�
 
 | Giá trị | Nghĩa | Khi nào |
 |---|---|---|
-| `unverified` | Chưa có căn cứ về người liên hệ. | Mọi trường hợp ở giai đoạn này, **kể cả khi tin đăng và địa điểm đều khớp**. |
-| `verified` | Đã xác minh người liên hệ. | Có trong enum, hiện không trả. Chưa có tiêu chí (xem mục 7). |
+| `unverified` | Chưa xác minh được người liên hệ. | Chưa nhập thông tin liên hệ trên trang chính thức, lời mời không có email hay số điện thoại của người gửi, hoặc không trùng. |
+| `verified` | Người gửi dùng email hoặc số điện thoại ghi trên trang tuyển dụng chính thức. | Email (không phân biệt hoa thường) hoặc số điện thoại (chuẩn hóa `+84`, `84`, dấu cách, chấm, gạch về dạng `0…`) của người gửi trùng với thông tin trong `contact.official`. |
 
 Kèm theo: `basis`. Người liên hệ không có `source` hay `checkedOn` vì chưa có nguồn đối chiếu.
 
@@ -96,10 +98,11 @@ Kèm theo: `basis`. Người liên hệ không có `source` hay `checkedOn` vì 
 | Thứ tự | Điều kiện | `status` |
 |---|---|---|
 | 1 | Có yêu cầu `credential_request` hoặc `fee_request` | `caution` |
-| 2 | Có yêu cầu `document_request` | `needs_verification` |
-| 3 | Địa điểm `company_unconfirmed` hoặc có `other_request` | `needs_verification` |
-| 4 | Tin `unavailable` hoặc `not_checked` và địa điểm chưa `matched` | `insufficient_information` |
-| 5 | Còn lại | `no_signal_observed` |
+| 2 | Tin `expired` (hạn đã qua hoặc ghi rõ đã đóng tuyển) | `caution` |
+| 3 | Có yêu cầu `document_request` | `needs_verification` |
+| 4 | Địa điểm `company_unconfirmed` hoặc có `other_request` | `needs_verification` |
+| 5 | Tin `unavailable` hoặc `not_checked` và địa điểm chưa `matched` | `insufficient_information` |
+| 6 | Còn lại | `no_signal_observed` |
 
 `no_signal_observed` nghĩa là chưa thấy dấu hiệu cần cảnh báo trong dữ kiện đã đối chiếu. Đây không phải xác nhận lời mời là thật.
 
@@ -161,7 +164,7 @@ Lỗi: `/healthz` không có lỗi nghiệp vụ. Gọi sai đường dẫn (ví
 |---|---|---|---|
 | `mode` | có | `"simulated" \| "live"` | |
 | `invitationText` | có | string, 1–5000 | Nội dung lời mời người dùng dán. |
-| `jobUrl` | không | string \| null | `simulated`: phải khớp chính xác `input.jobUrl` của một ca mẫu để điền sẵn công ty và vị trí. |
+| `jobUrl` | không | string \| null | `simulated`: khớp `input.jobUrl` của một ca mẫu sau khi chuẩn hóa (bỏ http/https, `www.`, dấu `/` cuối, `#...`, tham số `utm_*` và `fbclid`) thì điền sẵn công ty và vị trí. |
 | `meetingAddress` | không | string \| null | Địa chỉ hẹn người dùng nhập. |
 
 ```json
@@ -259,13 +262,14 @@ Khi `jobUrl` không thuộc ca mẫu nào, `company` và `role` là `not_found` 
 |---|---|---|---|
 | `mode` | có | `"simulated" \| "live"` | |
 | `invitationText` | có | string, 1–5000 | Gửi lại nguyên văn để kiểm tra `quote`. |
-| `jobUrl` | không | string \| null | `simulated`: chọn ca mẫu theo chuỗi khớp chính xác. |
+| `jobUrl` | không | string \| null | `simulated`: chọn ca mẫu theo link đã chuẩn hóa. |
 | `confirmed` | có | object | Dữ kiện người dùng đã xem và sửa. |
 | `confirmed.company` | có | string \| null | |
 | `confirmed.role` | có | string \| null | |
 | `confirmed.meetingAddress` | có | string \| null | Khác địa chỉ của ca mẫu thì bản đồ mô phỏng không áp dụng. |
 | `confirmed.requirements` | có | `Requirement[]`, tối đa 10 | Mảng rỗng nếu người dùng bỏ chọn hết. |
 | `jobPosting` | không | object \| null | Chỉ dùng ở `live`: `{ jobCode, postedOn, closesOn, closed }` người dùng đọc trên tin. |
+| `contact` | không | object \| null | `{ sender, official }`, mỗi mục tối đa 5 chuỗi. `sender`: email hoặc số điện thoại của người gửi khi lời mời không ghi. `official`: email hoặc số điện thoại người dùng chép từ trang tuyển dụng chính thức. Dùng ở cả hai chế độ. |
 | `save` | không | boolean | `true` thì lưu vào lịch sử và trả `historyId`. Mặc định `false`. |
 
 VT-DEMO-01 (mô phỏng), sau khi người dùng giữ nguyên dữ kiện đã trích:
@@ -331,7 +335,7 @@ VT-DEMO-01 (mô phỏng):
   },
   "contact": {
     "status": "unverified",
-    "basis": "Chưa có căn cứ về người liên hệ. Xác minh qua kênh tuyển dụng chính thức của công ty."
+    "basis": "Chưa có căn cứ về người liên hệ. Nhập email hoặc số điện thoại ghi trên trang tuyển dụng chính thức để đối chiếu."
   },
   "invitation": {
     "status": "caution",
@@ -349,7 +353,7 @@ VT-DEMO-01 (mô phỏng):
 }
 ```
 
-Đối chiếu với `expected` của VT-DEMO-01: `jobStatus = expired`, `locationStatus = company_unconfirmed`, `contactStatus = unverified`, `invitationStatus = caution`, `evidenceQuotes = ["đóng phí giữ suất phỏng vấn"]`. Bốn trạng thái và đoạn trích khớp. `suggestedQuestion` cùng ý nhưng khác chữ (xem mục 7).
+Đối chiếu với `expected` của VT-DEMO-01: `jobStatus = expired`, `locationStatus = company_unconfirmed`, `contactStatus = unverified`, `invitationStatus = caution`, `evidenceQuotes = ["đóng phí giữ suất phỏng vấn"]`. Bốn trạng thái và đoạn trích khớp. `suggestedQuestion` trùng từng chữ với `expected`.
 
 ### Biến thể của VT-DEMO-01 khi người dùng sửa ở bước xác nhận
 
@@ -415,19 +419,22 @@ Người dùng sửa địa chỉ thành `Số 12 Đường Mẫu`. Bản đồ 
 
 Các lỗi 400 do schema (thiếu `confirmed`, `requirements` quá 10 mục, `kind` lạ) có cùng dạng như ở `extract`.
 
-## 7. Điểm cần nhóm duyệt trước VT05
+## 7. Quyết định của nhóm (25/11/2026)
 
-README đã đánh dấu VT05 xong. Nếu nhóm đổi một điểm dưới đây, cần sửa lại `shared/`, mã API và test tương ứng.
+Các điểm nhóm đã duyệt. Mỗi điểm có test trong `apps/api/test/contract-decisions.test.ts` hoặc `apps/web/test`.
 
-1. **Câu hỏi gợi ý của VT-DEMO-01 khác `expected`.** API trả "... tên tòa nhà, số tầng và **kênh tuyển dụng chính thức** ...", `cases.json` ghi "... tên tòa nhà, số tầng và **email phòng nhân sự** ...". Test chỉ so theo mẫu nên vẫn đạt. Nhóm chọn một cách nói và sửa bên còn lại.
-2. ~~**Lời mời chỉ có khoảng trắng vẫn được nhận.**~~ *Đã sửa ngày 22/11/2026:* `invitationText` có thêm `pattern: "\\S"`, API trả 400 ở cả `extract` và `verify`. Có test trong `apps/api/test/api.test.ts`.
-3. **Tin hết hạn không ảnh hưởng `invitation.status`.** Nếu tin `expired`, địa điểm `matched` và không có yêu cầu phí hay giấy tờ, lời mời là `no_signal_observed`. Nhóm cần quyết định tin hết hạn có nên đưa lời mời về `needs_verification` không.
-4. **`contact.status = verified` chưa có tiêu chí.** Giá trị có trong enum nhưng không bao giờ trả. Chọn một: ghi tiêu chí xác minh (ví dụ email cùng tên miền với trang tuyển dụng chính thức), hoặc bỏ khỏi enum đến khi có tiêu chí để web không phải xử lý trạng thái chết.
-5. **`SOURCE_MODE_UNSUPPORTED` không còn dùng.** Mã này có trong `ErrorCode` và schema lỗi, nhưng không endpoint nào trả. *Đã bỏ chỗ nhắc test 501 trong `design.md`.* Nhóm còn cần chọn: bỏ mã khỏi enum, hoặc giữ cho sau.
-6. ~~**`design.md` lệch với mã ở `/healthz`.**~~ *Đã sửa:* ví dụ trong `design.md` có `modes: ["simulated", "live"]` và `capabilities`, kèm liên kết về tệp này và `openapi.json`.
-7. **Hai nghĩa của "chưa kiểm tra" ở tin đăng.** `simulated`: link ngoài dữ liệu mô phỏng là `not_checked`. `live`: có link mà chưa có hạn nộp là `unavailable` (`reason = no_deadline`). Cả hai theo R4 và R22, nhưng web cần nhãn rõ để người dùng hiểu vì sao cùng một link lại có hai trạng thái.
-8. **Khớp ca mẫu theo chuỗi `jobUrl` chính xác.** Thêm `/` cuối, đổi `http`/`https` hay thêm tham số thì không khớp, kết quả thành `not_checked`. Chấp nhận cho bản demo, hoặc chuẩn hóa URL trước khi so.
-9. **Lỗi giao thức gộp chung vào `VALIDATION_ERROR`.** JSON hỏng và thân quá lớn đều dùng mã này với thông báo chung. Gọi sai phương thức trả 404 thay vì 405. Nhóm xác nhận web chỉ cần phân biệt theo `error.code`.
-10. **Hai cách so `quote` khác nhau.** `verify` gom khoảng trắng trước khi so. `extract` điền `fields.meetingAddress.quote` bằng so chuỗi chính xác, nên địa chỉ có thêm khoảng trắng sẽ có `quote = null`. Nên dùng chung một hàm so.
-11. **`requirements.md` bị cắt ở R23.** *Đã viết lại* theo hành vi của `buildGuidance` và các test, có ghi chú trong tệp. Nhóm cần rà nội dung này vì đoạn gốc không còn trong Git.
-12. **Ổn định hợp đồng.** Đề xuất quy ước: trong `/api/v1` chỉ thêm trường tùy chọn hoặc giá trị enum mới, không đổi tên hay xóa. Web phải hiện trạng thái lạ như "Chưa rõ" thay vì lỗi. Đổi phá vỡ thì sang `/api/v2` và tăng `version` ở `/healthz`.
+1. **Câu hỏi gợi ý xin "kênh tuyển dụng chính thức".** `expected.suggestedQuestion` của VT-DEMO-01 trong `cases.json` đã đổi theo, nay trùng từng chữ với API.
+2. **Tin hết hạn đưa lời mời vào mục cảnh báo.** Tin `expired` cho `invitation.status = caution`, xếp ngay sau yêu cầu mã xác thực và yêu cầu phí (mục 3.4).
+3. **Tiêu chí `contact.status = verified`.** Email hoặc số điện thoại của người gửi trùng với thông tin liên hệ ghi trên trang tuyển dụng chính thức (LinkedIn, TopCV hoặc trang của công ty). Việc Thật không tự đọc các trang này: người dùng chép thông tin vào `contact.official` (web: mục "Xác minh người liên hệ"). Email và số điện thoại của người gửi lấy từ nội dung lời mời và `contact.sender`. Người liên hệ đã xác minh không làm mất cảnh báo phí hay giấy tờ. Mã: `apps/api/src/viec-that/contact.ts`.
+4. **Đã xóa `SOURCE_MODE_UNSUPPORTED`** khỏi `ErrorCode`, schema lỗi, OpenAPI và tài liệu. Không thành phần nào dùng mã này.
+5. **Chuẩn hóa URL trước khi so ca mẫu.** `normalizeJobUrl` trong `apps/api/src/viec-that/demo-data.ts`: bỏ http/https, `www.`, chữ hoa ở tên miền, dấu `/` cuối, phần `#...`, tham số theo dõi (`utm_*`, `fbclid`, `gclid`, `ref`, `source`), sắp xếp tham số còn lại.
+6. **Sai phương thức trả 405 `METHOD_NOT_ALLOWED`** kèm header `Allow`. Đường dẫn không tồn tại vẫn là 404. Thân quá lớn tách riêng thành 413 với thông báo "Nội dung gửi lên quá lớn." (mã `VALIDATION_ERROR` giữ nguyên).
+7. **Ổn định hợp đồng.** Trong `/api/v1` chỉ thêm trường tùy chọn hoặc giá trị enum mới, không đổi tên hay xóa trường. Web hiện "Chưa rõ" với màu trung tính cho trạng thái hoặc loại yêu cầu lạ (`labelOf`, `toneOf` trong `apps/web/src/labels.ts`). Thay đổi phá vỡ chuyển sang `/api/v2` và tăng `version` ở `/healthz`. Quy ước này cũng ghi trong `info.description` của OpenAPI.
+
+   *Ngoại lệ đã ghi nhận:* hai thay đổi trong lượt này không hoàn toàn là "chỉ thêm". Xóa `SOURCE_MODE_UNSUPPORTED` khỏi enum, và gọi sai phương thức đổi từ 404 sang 405. Cả hai làm trước khi công khai và không client nào dùng hành vi cũ, nên vẫn giữ `/api/v1`.
+
+### Điểm còn mở
+
+- **Hai nghĩa của "chưa kiểm tra" ở tin đăng.** `simulated`: link ngoài dữ liệu mô phỏng là `not_checked`. `live`: có link mà chưa có hạn nộp là `unavailable` (`reason = no_deadline`). Web cần nhãn đủ rõ.
+- **Hai cách so `quote`.** `verify` gom khoảng trắng trước khi so, `extract` so chính xác khi điền `fields.meetingAddress.quote`.
+- **R23 trong `requirements.md`** được viết lại theo mã, nhóm cần rà.

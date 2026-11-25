@@ -35,7 +35,7 @@ Cập nhật ngày 22/11/2026.
 - Bốn ca mô phỏng chạy đúng `expected` ở API. VT-DEMO-01, 02, 04 chạy hết luồng ở giao diện.
 - Lịch sử tra cứu bằng PostgreSQL: lưu theo thiết bị (cookie ẩn danh), xem lại, chọn và xóa từng mục, tự hết hạn sau 30 ngày, tối đa 100 bản mỗi thiết bị. Đã thử trên PostgreSQL 18 thật.
 - Chế độ live (mã VT07 đến VT11): AI đọc lời mời qua Bedrock, địa điểm qua Vietmap, tin đăng từ dữ kiện người dùng nhập, hạ cấp có thông báo khi thiếu dịch vụ, giới hạn 30 yêu cầu mỗi phút mỗi IP.
-- Kiểm thử local: API 103 test, web 18 test, typecheck và build đạt. Các test của AI và Vietmap dùng bản giả lập.
+- Kiểm thử local: API 123 test, web 25 test, typecheck và build đạt. Các test của AI và Vietmap dùng bản giả lập.
 - Caddy phục vụ được bản build và chuyển tiếp API ở local. k6 đo đủ 600 luồng mô phỏng với 0 lỗi HTTP. Xem [triển khai](deploy/README.md) và [kiểm thử tải](#kiểm-thử-tải-local-vt14).
 
 **Chưa làm hoặc chưa kiểm chứng**
@@ -186,7 +186,7 @@ Phân vai đề xuất: **A** dữ liệu và AI, **B** web và AWS, **C** kiể
 
 | Task | Vai trò | Sau | Tiêu chí hoàn thành |
 |---|---|---|---|
-| [ ] VT13 — Kiểm thử logic và API | A + B | VT11 | Chạy ca tin hết hạn, địa chỉ dùng chung, thiếu dữ kiện, lỗi Maps/AI, và kiểm tra trích dẫn. *108 test tự động đạt (API 90, web 18), gồm 20 ca lời mời mới. Còn kiểm thử dịch vụ thật.* |
+| [ ] VT13 — Kiểm thử logic và API | A + B | VT11 | Chạy ca tin hết hạn, địa chỉ dùng chung, thiếu dữ kiện, lỗi Maps/AI, và kiểm tra trích dẫn. *148 test tự động đạt (API 123, web 25), gồm 20 ca lời mời mới. Còn kiểm thử dịch vụ thật.* |
 | [ ] VT14 — Đo API bằng k6 | B | VT11 | Đo p95 và tỷ lệ lỗi ở môi trường thử. *Đã đo local với dữ liệu mô phỏng. Còn đo trên bản triển khai và lấy mẫu gọi AI thật trong hạn mức.* |
 | [ ] VT15 — Thử người dùng trên iPhone | C | VT12, VT13 | So điểm chọn đúng bước xác minh và thời gian thao tác với tra cứu thủ công. Ghi số lượt và lỗi thực tế. |
 | [ ] VT16 — Bổ sung Street View hoặc đọc ảnh nếu còn thời gian | B + C | VT12 | Tính năng bổ sung chạy trên máy thật. Street View có nguồn, ngày chụp nếu có và phương án chỉ hiện bản đồ khi thiếu ảnh. |
@@ -302,7 +302,7 @@ npm run dev:api
 
 ```powershell
 npm run typecheck
-npm test            # API 90 test, web 18 test
+npm test            # API 123 test, web 25 test
 npm run build
 npm run openapi -w apps/api          # sinh lại docs/openapi.json sau khi đổi shared/schemas.ts
 npm run check:services -w apps/api   # gọi thử Bedrock và Vietmap nếu đã cấu hình

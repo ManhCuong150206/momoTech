@@ -40,7 +40,7 @@ export function buildOpenApi() {
       title: 'Việc Thật API',
       version: API_VERSION,
       description:
-        'Đối chiếu lời mời việc làm: tin đăng, địa điểm, người liên hệ và yêu cầu trong lời mời. Ví dụ và quy tắc trạng thái: docs/API-CONTRACT.md.',
+        'Đối chiếu lời mời việc làm: tin đăng, địa điểm, người liên hệ và yêu cầu trong lời mời. Ví dụ và quy tắc trạng thái: docs/API-CONTRACT.md. Ổn định hợp đồng: trong /api/v1 chỉ thêm trường tùy chọn hoặc giá trị enum mới, không đổi tên hay xóa. Client phải chấp nhận giá trị enum lạ. Thay đổi phá vỡ chuyển sang /api/v2 và tăng version.',
     },
     servers: [{ url: '/' }],
     // Không đăng nhập. Lịch sử gắn với thiết bị qua cookie HttpOnly vt_device do máy chủ tự đặt.
@@ -151,4 +151,13 @@ export function buildOpenApi() {
   };
 }
 
-export const openApiText = (): string => `${JSON.stringify(buildOpenApi(), null, 2)}\n`;
+export const openApiText = (): string => {
+  const doc = buildOpenApi();
+  // Mọi đường dẫn đều trả 405 METHOD_NOT_ALLOWED (kèm header Allow) khi gọi sai phương thức.
+  for (const ops of Object.values(doc.paths)) {
+    for (const op of Object.values(ops) as Array<{ responses: Record<string, unknown> }>) {
+      op.responses['405'] = error('METHOD_NOT_ALLOWED: đường dẫn có thật nhưng không nhận phương thức đã gửi. Header Allow liệt kê phương thức được phép.');
+    }
+  }
+  return `${JSON.stringify(doc, null, 2)}\n`;
+};

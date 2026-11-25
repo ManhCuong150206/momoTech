@@ -201,3 +201,27 @@ describe('đề xuất bổ sung: nhánh dự phòng trên giao diện', () => {
     expect(screen.getByRole('article', { name: 'Việc nên làm ngay' }).textContent).toContain('Tạm dừng đóng phí');
   });
 });
+
+describe('quyết định ở mục 7 của hợp đồng API', () => {
+  it('người liên hệ "Đã xác minh" khi email người gửi trùng email trên trang tuyển dụng chính thức', async () => {
+    const user = userEvent.setup();
+    const form = await fillAndExtract(user, `${ATTEND_TEXT} Liên hệ lan@anhduong.vn.`, async () => {
+      await user.click(screen.getByText('Xác minh người liên hệ (nếu có)'));
+      await user.type(screen.getByLabelText('Email hoặc số điện thoại trên trang tuyển dụng chính thức'), 'LAN@anhduong.vn');
+    });
+    await user.click(within(form).getByRole('button', { name: 'Đối chiếu' }));
+    const contact = await screen.findByRole('article', { name: 'Người liên hệ' });
+    expect(within(contact).getByText('Đã xác minh')).toBeTruthy();
+    expect(within(contact).getByText(/lan@anhduong\.vn/)).toBeTruthy();
+  });
+
+  it('tin hết hạn đưa lời mời vào mục cảnh báo', async () => {
+    const user = userEvent.setup();
+    const form = await fillAndExtract(user, ATTEND_TEXT, async () => {
+      await user.click(screen.getByLabelText('Tin ghi rõ đã đóng tuyển'));
+    });
+    await user.click(within(form).getByRole('button', { name: 'Đối chiếu' }));
+    const inv = await screen.findByRole('article', { name: 'Lời mời' });
+    expect(within(inv).getByText('Cần thận trọng')).toBeTruthy();
+  });
+});

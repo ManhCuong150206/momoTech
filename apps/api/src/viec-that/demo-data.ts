@@ -65,12 +65,40 @@ export function normalize(s: string | null | undefined): string {
     .trim();
 }
 
-/** Tìm ca mô phỏng theo link tin đăng. Không có link hoặc không khớp thì trả undefined. */
+/** Tham số chỉ để đo lượt truy cập, không đổi nội dung trang. */
+const TRACKING_PARAM = /^(utm_\w+|fbclid|gclid|ref|source)$/i;
+
+/**
+ * Chuẩn hóa link tin để so ca mẫu: bỏ http/https và `www.`, chữ thường ở tên miền,
+ * bỏ dấu `/` cuối, bỏ phần `#...` và tham số theo dõi, sắp xếp các tham số còn lại.
+ * Chuỗi không phải URL thì chỉ cắt khoảng trắng.
+ */
+export function normalizeJobUrl(value: string | null | undefined): string {
+  const raw = (value ?? '').trim();
+  if (!raw) return '';
+  let url: URL;
+  try {
+    url = new URL(/^[a-z][a-z\d+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`);
+  } catch {
+    return raw;
+  }
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return raw;
+  const host = url.hostname.toLowerCase().replace(/^www\./, '');
+  const port = url.port ? `:${url.port}` : '';
+  const pathname = url.pathname.replace(/\/+$/, '');
+  const params = [...url.searchParams]
+    .filter(([k]) => !TRACKING_PARAM.test(k))
+    .sort(([a, av], [b, bv]) => a.localeCompare(b) || av.localeCompare(bv));
+  const query = params.length ? `?${new URLSearchParams(params).toString()}` : '';
+  return `${host}${port}${pathname}${query}`;
+}
+
+/** Tìm ca mô phỏng theo link tin đăng, so sau khi chuẩn hóa. Không có link hoặc không khớp thì trả undefined. */
 export function findCaseByJobUrl(
   data: DemoData,
   jobUrl: string | null | undefined,
 ): DemoCase | undefined {
-  const url = (jobUrl ?? '').trim();
+  const url = normalizeJobUrl(jobUrl);
   if (!url) return undefined;
-  return data.cases.find((c) => c.input.jobUrl === url);
+  return data.cases.find((c) => normalizeJobUrl(c.input.jobUrl) === url);
 }

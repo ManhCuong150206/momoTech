@@ -380,6 +380,8 @@ describe('lịch sử: giới hạn số bản ghi mỗi thiết bị', () => {
     const list = (await app.inject({ url: '/api/v1/history', headers: { cookie } })).json().items as Array<{ title: string; mode: string; simulated: boolean }>;
     expect(list.map((x) => x.title)).toEqual(['Công ty 4', 'Công ty 3', 'Công ty 2']);
     expect(list[0]).toMatchObject({ mode: 'live', simulated: false });
+    await app.close();
     await db.close();
-  });
+    // Khởi động PGlite (Postgres chạy bằng WASM) và NestJS ngay trong test nên cần quá 5 giây mặc định.
+  }, 30_000);
 });

@@ -13,7 +13,7 @@ shared/schemas.ts    JSON Schema, API dùng Ajv để kiểm tra đầu vào, te
 
 - Web gọi API cùng origin qua proxy của Vite, nên không cần CORS.
 - `extract.ts` và `verify.ts` là điểm thay thế ở giai đoạn sau. VT07 thay `extract` bằng Bedrock. VT08/VT09 thay phần đọc `fixtures` bằng Vietmap và nguồn tin. Hình dạng phản hồi giữ nguyên.
-- Ca mô phỏng được chọn theo `jobUrl` khớp chính xác với `cases.json`. Không khớp thì `job` là `not_checked`.
+- Ca mô phỏng được chọn theo `jobUrl` khớp với `cases.json` sau khi chuẩn hóa URL (`normalizeJobUrl`). Không khớp thì `job` là `not_checked`.
 - Ngày kiểm tra ở chế độ mô phỏng là `demoAsOf` (2026-11-21) để kết quả không đổi theo ngày chạy.
 - Địa chỉ đã sửa khác địa chỉ của ca mô phỏng thì bản đồ mô phỏng không áp dụng, `location` là `not_checked` kèm thông báo.
 - Khi gọi AI thật ở giai đoạn sau, chỉ gửi `invitationText`, các trường đã xác nhận và dữ kiện nguồn hợp lệ. Không gửi `expected`.
@@ -24,11 +24,11 @@ shared/schemas.ts    JSON Schema, API dùng Ajv để kiểm tra đầu vào, te
 |---|---|
 | `job` | `open`, `expired`, `unavailable`, `not_checked` |
 | `location` | `matched`, `company_unconfirmed`, `unavailable`, `not_checked` |
-| `contact` | `unverified`, `verified` (giai đoạn này chỉ trả `unverified`) |
+| `contact` | `unverified`, `verified` (email hoặc số điện thoại người gửi trùng thông tin trên trang tuyển dụng chính thức) |
 | `invitation` | `caution`, `needs_verification`, `no_signal_observed`, `insufficient_information` |
 | `requirements[].kind` | `fee_request`, `attendance_confirmation`, `shared_office_meeting`, `address_pending`, `document_request`, `credential_request`, `other_request` |
 
-`invitation.status` xét theo thứ tự. Yêu cầu mã xác thực hoặc phí cho `caution`. Yêu cầu giấy tờ, địa điểm chưa xác nhận công ty hoặc yêu cầu khác cần làm rõ cho `needs_verification`. Tin chưa kiểm tra được và địa điểm chưa khớp cho `insufficient_information`. Những trường hợp còn lại cho `no_signal_observed` trong phạm vi dữ kiện đã đối chiếu.
+`invitation.status` xét theo thứ tự. Yêu cầu mã xác thực hoặc phí cho `caution`. Tin `expired` cũng cho `caution`. Yêu cầu giấy tờ, địa điểm chưa xác nhận công ty hoặc yêu cầu khác cần làm rõ cho `needs_verification`. Tin chưa kiểm tra được và địa điểm chưa khớp cho `insufficient_information`. Những trường hợp còn lại cho `no_signal_observed` trong phạm vi dữ kiện đã đối chiếu.
 
 Hợp đồng đầy đủ kèm ví dụ VT-DEMO-01 lấy từ phản hồi thật: [`docs/API-CONTRACT.md`](../../../docs/API-CONTRACT.md). Mô tả máy đọc được: [`docs/openapi.json`](../../../docs/openapi.json) (OpenAPI 3.1, sinh từ `shared/schemas.ts` bằng `npm run openapi -w apps/api`).
 
@@ -37,13 +37,15 @@ Hợp đồng đầy đủ kèm ví dụ VT-DEMO-01 lấy từ phản hồi th�
 | HTTP | `error.code` | Khi nào |
 |---|---|---|
 | 400 | `VALIDATION_ERROR` | Thiếu trường, sai kiểu, chuỗi rỗng hoặc chỉ có khoảng trắng, có trường lạ. `details` chứa lỗi từ bộ kiểm tra. JSON hỏng cũng trả mã này, không có `details`. |
-| 404 | `NOT_FOUND` | Đường dẫn không tồn tại, kể cả gọi sai phương thức. |
+| 404 | `NOT_FOUND` | Đường dẫn không tồn tại. |
+| 405 | `METHOD_NOT_ALLOWED` | Đường dẫn có thật nhưng sai phương thức. Có header `Allow`. |
+| 413 | `VALIDATION_ERROR` | Thân quá lớn. Thông báo "Nội dung gửi lên quá lớn." |
 | 422 | `QUOTE_NOT_IN_SOURCE` | Một `quote` không nằm trong `invitationText`. `details.quotes` liệt kê đoạn sai. |
 | 500 | `INTERNAL_ERROR` | Lỗi không lường trước. Thông báo chung, không lộ nội dung. |
 | 503 | `HISTORY_DISABLED` | Gọi lịch sử hoặc `save: true` khi chưa cấu hình `DATABASE_URL`. |
 | 429 | `RATE_LIMITED` | Vượt giới hạn yêu cầu mỗi phút. Có header `Retry-After`. |
 
-`SOURCE_MODE_UNSUPPORTED` còn trong enum `ErrorCode` nhưng không endpoint nào trả, vì cả hai chế độ đều đã được hỗ trợ.
+Mã `SOURCE_MODE_UNSUPPORTED` đã bị xóa (25/11/2026). Quy ước ổn định hợp đồng và các quyết định khác: mục 7 của `docs/API-CONTRACT.md`.
 
 Dạng lỗi:
 
@@ -137,7 +139,7 @@ Phản hồi 200 (`VerifyResponse`), rút gọn `mapUrl`:
     "place": { "displayName": "Tòa nhà Demo A", "address": "Số 10 Đường Mẫu" },
     "mapUrl": "https://www.google.com/maps/search/?api=1&query=..."
   },
-  "contact": { "status": "unverified", "basis": "Chưa có căn cứ về người liên hệ. Xác minh qua kênh tuyển dụng chính thức của công ty." },
+  "contact": { "status": "unverified", "basis": "Chưa có căn cứ về người liên hệ. Nhập email hoặc số điện thoại ghi trên trang tuyển dụng chính thức để đối chiếu." },
   "invitation": {
     "status": "caution",
     "basis": "Lời mời yêu cầu một khoản phí. Cần xác minh trước khi chuyển tiền.",

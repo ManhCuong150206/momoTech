@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { HistoryDetailResponse, HistoryItemSummary } from '../../../shared/contract';
 import { api, ApiError } from './api';
-import { INVITATION_LABEL, INVITATION_TONE, JOB_LABEL, LOCATION_LABEL } from './labels';
+import {
+  INVITATION_LABEL,
+  INVITATION_TONE,
+  JOB_LABEL,
+  labelOf,
+  LOCATION_LABEL,
+  toneOf,
+} from './labels';
 import ResultView, { SimBadge } from './ResultView';
 
 const fmt = (iso: string) =>
@@ -127,11 +134,11 @@ export default function History({ ttlDays }: { ttlDays: number }) {
                   <strong>{it.title}</strong>
                   {it.simulated && <SimBadge />}
                   <span className="meta">{fmt(it.createdAt)}</span>
-                  <span className={`pill pill-${INVITATION_TONE[it.invitationStatus]}`}>
-                    {INVITATION_LABEL[it.invitationStatus]}
+                  <span className={`pill pill-${toneOf(INVITATION_TONE, it.invitationStatus)}`}>
+                    {labelOf(INVITATION_LABEL, it.invitationStatus)}
                   </span>
                   <span className="meta">
-                    Tin: {JOB_LABEL[it.jobStatus]} · Địa điểm: {LOCATION_LABEL[it.locationStatus]}
+                    Tin: {labelOf(JOB_LABEL, it.jobStatus)} · Địa điểm: {labelOf(LOCATION_LABEL, it.locationStatus)}
                   </span>
                 </button>
               </li>

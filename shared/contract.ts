@@ -72,12 +72,24 @@ export interface JobPostingInput {
   closed?: boolean;
 }
 
+/**
+ * Email hoặc số điện thoại để xác minh người liên hệ. Việc Thật không tự đọc trang tuyển dụng:
+ * người dùng chép thông tin liên hệ họ thấy trên trang chính thức (LinkedIn, TopCV, trang của công ty).
+ */
+export interface ContactCheckInput {
+  /** Email hoặc số điện thoại của người gửi lời mời, khi không có sẵn trong nội dung lời mời. */
+  sender?: string[];
+  /** Email hoặc số điện thoại ghi trên trang tuyển dụng chính thức. */
+  official?: string[];
+}
+
 export interface VerifyRequest {
   mode: SourceMode;
   invitationText: string;
   jobUrl?: string | null;
   confirmed: ConfirmedFields;
   jobPosting?: JobPostingInput | null;
+  contact?: ContactCheckInput | null;
   /** true: lưu bản ghi vào lịch sử của thiết bị này. Mặc định false. */
   save?: boolean;
 }
@@ -159,8 +171,8 @@ export interface DemoCaseSummary {
 export type ErrorCode =
   | 'VALIDATION_ERROR'
   | 'QUOTE_NOT_IN_SOURCE'
-  | 'SOURCE_MODE_UNSUPPORTED'
   | 'NOT_FOUND'
+  | 'METHOD_NOT_ALLOWED'
   | 'HISTORY_DISABLED'
   | 'RATE_LIMITED'
   | 'INTERNAL_ERROR';

@@ -102,6 +102,14 @@ export const verifyRequestSchema = {
         closed: { type: 'boolean' },
       },
     },
+    contact: {
+      type: ['object', 'null'],
+      additionalProperties: false,
+      properties: {
+        sender: { type: 'array', maxItems: 5, items: { type: 'string', minLength: 1, maxLength: 254 } },
+        official: { type: 'array', maxItems: 5, items: { type: 'string', minLength: 1, maxLength: 254 } },
+      },
+    },
     confirmed: {
       type: 'object',
       additionalProperties: false,
@@ -261,7 +269,7 @@ export const errorResponseSchema = {
       properties: {
         code: {
           type: 'string',
-          enum: ['VALIDATION_ERROR', 'QUOTE_NOT_IN_SOURCE', 'SOURCE_MODE_UNSUPPORTED', 'NOT_FOUND', 'HISTORY_DISABLED', 'RATE_LIMITED', 'INTERNAL_ERROR'],
+          enum: ['VALIDATION_ERROR', 'QUOTE_NOT_IN_SOURCE', 'NOT_FOUND', 'METHOD_NOT_ALLOWED', 'HISTORY_DISABLED', 'RATE_LIMITED', 'INTERNAL_ERROR'],
         },
         message: str,
         details: {},

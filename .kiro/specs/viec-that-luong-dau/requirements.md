@@ -24,7 +24,8 @@ Ngoài phạm vi của ba task trên: triển khai AWS (VT12), k6, Street View, 
 - `job.status = expired` chỉ khi hạn nộp đã qua so với ngày kiểm tra, hoặc nguồn ghi rõ đã đóng tuyển.
 - Nguồn không đọc được (ví dụ cần đăng nhập) cho `unavailable`. Chưa có link hoặc link ngoài dữ liệu mô phỏng cho `not_checked`.
 - `location.status = company_unconfirmed` khi chỉ thấy tòa nhà, không gian dùng chung, hoặc công ty tại địa chỉ khác công ty đã xác nhận.
-- `contact.status` giữ `unverified` khi chưa có căn cứ về người liên hệ, kể cả khi tin và địa chỉ khớp.
+- `contact.status` giữ `unverified` khi chưa có căn cứ về người liên hệ, kể cả khi tin và địa chỉ khớp. Chỉ `verified` khi email hoặc số điện thoại của người gửi trùng với thông tin liên hệ trên trang tuyển dụng chính thức (LinkedIn, TopCV, trang của công ty) do người dùng nhập.
+- Tin `expired` đưa lời mời về `caution`.
 
 **R5. Đoạn trích có nguồn.** Mọi yêu cầu có `quote` nguyên văn từ lời mời. `verify` trả HTTP 422 `QUOTE_NOT_IN_SOURCE` nếu một `quote` không nằm trong `invitationText`.
 
