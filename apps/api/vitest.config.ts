@@ -10,6 +10,7 @@ export default defineConfig({
       DATABASE_URL: '',
       VIETMAP_API_KEY: '',
       BEDROCK_MODEL_ID: '',
+      DEMO_CASES_ENABLED: '',
     },
   },
 });

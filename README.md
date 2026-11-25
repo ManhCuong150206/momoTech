@@ -26,7 +26,7 @@ Web tiếng Việt giúp sinh viên đối chiếu lời mời việc làm, tin 
 
 ## 1. Trạng thái hiện tại
 
-Cập nhật ngày 22/11/2026.
+Cập nhật ngày 25/11/2026.
 
 **Đã làm và đã kiểm tra**
 - Hợp đồng API (VT04): kiểu TypeScript và JSON Schema trong `shared/`, ví dụ và mã lỗi trong `design.md`.
@@ -173,7 +173,7 @@ Phân vai đề xuất: **A** dữ liệu và AI, **B** web và AWS, **C** kiể
 
 | Task | Vai trò | Sau | Tiêu chí hoàn thành |
 |---|---|---|---|
-| [x] VT05 — Tạo khung React và Fastify | B | VT04 | Web, API và health endpoint chạy trên máy phát triển. Có cấu hình mẫu. |
+| [x] VT05 — Tạo khung React và API (NestJS, ban đầu là Fastify) | B | VT04 | Web, API và health endpoint chạy trên máy phát triển. Có cấu hình mẫu. |
 | [ ] VT06 — Tạo form lời mời và màn hình xác nhận | B | VT05 | Người dùng dán văn bản, link và địa chỉ, sửa được dữ kiện trước khi tra cứu trên Safari iPhone. *Chạy và test được trên máy phát triển, chưa thử trên iPhone thật.* |
 | [ ] VT07 — AI trích thông tin lời mời | A | VT02, VT04, VT05 | Mô hình trả công ty, vị trí, địa chỉ, hành động được yêu cầu và trích đoạn có thật. *Mã và test xong với bản giả lập. Chờ VT02 để gọi Bedrock thật.* |
 | [ ] VT08 — Đối chiếu địa điểm | B | VT03, VT05 | Tìm theo tên và địa chỉ. Phân biệt khớp công ty, chỉ thấy địa điểm, hoặc chưa kiểm tra. Hiện nút bản đồ. *Mã và test xong với Vietmap giả lập. Dùng nút mở bản đồ khi chưa có khóa Vietmap.* |
@@ -187,7 +187,7 @@ Phân vai đề xuất: **A** dữ liệu và AI, **B** web và AWS, **C** kiể
 | Task | Vai trò | Sau | Tiêu chí hoàn thành |
 |---|---|---|---|
 | [ ] VT13 — Kiểm thử logic và API | A + B | VT11 | Chạy ca tin hết hạn, địa chỉ dùng chung, thiếu dữ kiện, lỗi Maps/AI, và kiểm tra trích dẫn. *148 test tự động đạt (API 123, web 25), gồm 20 ca lời mời mới. Còn kiểm thử dịch vụ thật.* |
-| [ ] VT14 — Đo API bằng k6 | B | VT11 | Đo p95 và tỷ lệ lỗi ở môi trường thử. *Đã đo local với dữ liệu mô phỏng. Còn đo trên bản triển khai và lấy mẫu gọi AI thật trong hạn mức.* |
+| [ ] VT14 — Đo API bằng k6 | B | VT11 | Đo p95 và tỷ lệ lỗi ở môi trường thử. *Đã đo local trên NestJS ngày 25/11: p95 dưới 2 ms, 0% lỗi. Còn đo trên bản triển khai và lấy mẫu gọi AI thật trong hạn mức.* |
 | [ ] VT15 — Thử người dùng trên iPhone | C | VT12, VT13 | So điểm chọn đúng bước xác minh và thời gian thao tác với tra cứu thủ công. Ghi số lượt và lỗi thực tế. |
 | [ ] VT16 — Bổ sung Street View hoặc đọc ảnh nếu còn thời gian | B + C | VT12 | Tính năng bổ sung chạy trên máy thật. Street View có nguồn, ngày chụp nếu có và phương án chỉ hiện bản đồ khi thiếu ảnh. |
 | [ ] VT17 — Chốt bản nộp | Cả nhóm | VT13–VT15 | Sửa lỗi luồng chính, thử lại link ngoài mạng nhóm và ghi phiên bản Git tương ứng với bản chạy. |
@@ -283,7 +283,7 @@ npm run dev:web    # Web tại http://127.0.0.1:5173 (chuyển /api sang API)
 
 Mở http://127.0.0.1:5173, chọn một ca mẫu rồi bấm "Phân tích lời mời". Kiểm tra API: http://127.0.0.1:5173/healthz.
 
-**Biến môi trường** (xem `.env.example`, đặt trong `.env` ở thư mục gốc, Git bỏ qua tệp này): `PORT`, `HOST`, `LOG_LEVEL`, `DATABASE_URL`, `HISTORY_TTL_DAYS`, `HISTORY_MAX_PER_DEVICE`, `COOKIE_SECURE`, `RATE_LIMIT_PER_MINUTE`, `TRUST_PROXY`, `BEDROCK_MODEL_ID`, `AWS_REGION`, `VIETMAP_API_KEY`, `VIETMAP_MAX_REQUESTS_PER_MINUTE`, `VIETMAP_MAX_REQUESTS_PER_DAY`, `VIETMAP_MAX_CONCURRENT_REQUESTS`, `GEOCODING_SUSPICIOUS_DISTANCE_KM`. Không đặt khóa AWS vào `.env`: SDK dùng IAM role (EC2) hoặc đăng nhập SSO.
+**Biến môi trường** (xem `.env.example`, đặt trong `.env` ở thư mục gốc, Git bỏ qua tệp này): `PORT`, `HOST`, `LOG_LEVEL`, `DATABASE_URL`, `HISTORY_TTL_DAYS`, `HISTORY_MAX_PER_DEVICE`, `COOKIE_SECURE`, `RATE_LIMIT_PER_MINUTE`, `TRUST_PROXY`, `BEDROCK_MODEL_ID`, `AWS_REGION`, `VIETMAP_API_KEY`, `VIETMAP_MAX_REQUESTS_PER_MINUTE`, `VIETMAP_MAX_REQUESTS_PER_DAY`, `VIETMAP_MAX_CONCURRENT_REQUESTS`, `GEOCODING_SUSPICIOUS_DISTANCE_KM`, `DEMO_CASES_ENABLED` (mặc định `true`; đặt `false` trên bản chạy thực tế để ẩn ca mẫu và chỉ nhận chế độ live). Không đặt khóa AWS vào `.env`: SDK dùng IAM role (EC2) hoặc đăng nhập SSO.
 
 **Lịch sử tra cứu (PostgreSQL, tùy chọn).** Không đặt `DATABASE_URL` thì API chạy không lịch sử và web ẩn tab Lịch sử. Để bật:
 
@@ -406,12 +406,16 @@ k6 run tests/load/invitations.js
 
 Kịch bản luân phiên bốn ca mô phỏng ở mức 20 luồng/giây trong 30 giây. Mỗi luồng gọi `extract` rồi `verify`, kiểm tra bốn trạng thái và đoạn trích. API thử chạy trên `127.0.0.1:3900`, với giới hạn tần suất tắt và không bật lưu lịch sử. Các nguồn trong ca đều là dữ liệu giả lập, nên phép đo chỉ phản ánh thời gian xử lý local.
 
+Đo ngày 25/11/2026 trên bản API NestJS (commit `ffa83fc` cộng các sửa chưa commit), máy phát triển Windows, Node.js v24.21.0.
+
 | Chỉ số đo bằng k6 v2.4.0 | Kết quả |
 | --- | --- |
-| Luồng hoàn tất / yêu cầu HTTP | 600 / 1.200 |
-| p95 `extract` / p95 `verify` | 1,52 ms / 1,30 ms |
-| Lỗi HTTP / lỗi luồng | 0% / 0% |
+| Luồng hoàn tất / yêu cầu HTTP | 601 / 1.202 |
+| p95 `extract` / p95 `verify` | 1,92 ms / 1,51 ms |
+| Lỗi HTTP / lỗi luồng / kiểm tra đạt | 0% / 0% / 1.803 trên 1.803 |
 | Luồng bỏ lỡ | 0 |
+
+Bản Fastify cũ (22/11/2026) đo được p95 `extract` 1,52 ms và `verify` 1,30 ms. Cả hai đều xa ngưỡng 250 ms, nên chênh lệch không đáng kể. Số đo này chưa gồm mạng, HTTPS, Bedrock hay Vietmap. VT14 còn cần đo trên bản triển khai.
 
 p95 là mốc thời gian mà 95% yêu cầu hoàn thành trong hoặc dưới mốc đó. Ngưỡng local của bài đo là p95 dưới 250 ms cho mỗi bước, lỗi dưới 1% và không bỏ lỡ luồng.
 
@@ -443,14 +447,15 @@ Mở thư mục gốc `MoMo tech` trong Kiro IDE để agent thấy tài liệu 
 
 ## 9. Khai báo tài sản và AI (bản nháp VT18)
 
-Bản nháp này ghi theo những gì có trong mã ngày 22/11/2026. Ô ghi *cần nhóm xác nhận* phải được điền trước khi đóng ZIP.
+Bản nháp này ghi theo những gì có trong mã ngày 25/11/2026. Ô ghi *cần nhóm xác nhận* phải được điền trước khi đóng ZIP.
 
 ### AI trong sản phẩm
 
 | Thành phần | Vai trò | Giới hạn |
 |---|---|---|
-| AWS Bedrock Converse (`apps/api/src/ai.ts`) | Đọc lời mời, trích công ty, vị trí, địa chỉ và yêu cầu kèm đoạn trích nguyên văn. | Mô hình: *cần nhóm xác nhận* (`BEDROCK_MODEL_ID`). Nhiệt độ 0, công cụ bắt buộc. Chỉ gửi văn bản lời mời. Máy chủ loại mục không có đoạn trích trong lời mời. AI không quyết định trạng thái. Trạng thái và câu hỏi gợi ý do luật TypeScript sinh ra. |
-| Luật cố định (`apps/api/src/requirements.ts`) | Luôn chạy để không bỏ sót yêu cầu đóng phí, gửi giấy tờ. Là phương án dự phòng khi AI chưa cấu hình hoặc lỗi. | Không dùng mô hình. |
+| AWS Bedrock Converse (`apps/api/src/viec-that/ai.ts`) | Đọc lời mời, trích công ty, vị trí, địa chỉ và yêu cầu kèm đoạn trích nguyên văn. | Mô hình: *cần nhóm xác nhận* (`BEDROCK_MODEL_ID`). Nhiệt độ 0, công cụ bắt buộc. Chỉ gửi văn bản lời mời. Máy chủ loại mục không có đoạn trích trong lời mời. AI không quyết định trạng thái. Trạng thái và câu hỏi gợi ý do luật TypeScript sinh ra. |
+| Luật cố định (`apps/api/src/viec-that/requirements.ts`) | Luôn chạy để không bỏ sót yêu cầu đóng phí, gửi giấy tờ, mã xác thực. Là phương án dự phòng khi AI chưa cấu hình hoặc lỗi. | Không dùng mô hình. |
+| Xác minh người liên hệ (`apps/api/src/viec-that/contact.ts`) | So email hoặc số điện thoại của người gửi với thông tin liên hệ người dùng chép từ trang tuyển dụng chính thức. | Không dùng mô hình. Không tự đọc LinkedIn, TopCV hay trang công ty. |
 
 ### AI dùng khi phát triển
 
@@ -470,6 +475,7 @@ Bản nháp này ghi theo những gì có trong mã ngày 22/11/2026. Ô ghi *c�
 | VietJobs, EMSCAD | Chỉ là tài liệu tham khảo. Chưa tải và chưa đưa vào ZIP. |
 | Google Maps URLs | Nút "Mở bản đồ" tạo link tìm kiếm. Không cần khóa API. |
 | Vietmap | Tìm địa điểm theo tên công ty và địa chỉ. Có mã client, chưa gọi thật. Cần rà điều khoản sử dụng. |
+| LinkedIn, TopCV, trang tuyển dụng công ty | Chỉ là nơi người dùng tự xem hạn nộp và thông tin liên hệ rồi chép vào. Việc Thật không thu thập tự động. |
 
 ### Thư viện chính
 

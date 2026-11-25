@@ -43,6 +43,7 @@ Mọi lỗi có cùng một dạng. `details` chỉ có khi giúp người gọi
 | HTTP | `error.code` | Khi nào | `details` |
 |---|---|---|---|
 | 400 | `VALIDATION_ERROR` | Thiếu trường, sai kiểu, chuỗi rỗng hoặc chỉ có khoảng trắng, vượt giới hạn, trường lạ, `mode` sai. | Mảng lỗi Ajv (`instancePath`, `keyword`, `params`, `message`). |
+| 400 | `VALIDATION_ERROR` | `mode: "simulated"` khi máy chủ đặt `DEMO_CASES_ENABLED=false`. `message` là "Chế độ mô phỏng đã tắt trên máy chủ này. Dùng mode \"live\"." | Mảng một lỗi ở `/mode`. |
 | 400 | `VALIDATION_ERROR` | JSON hỏng. `message` là "Yêu cầu không hợp lệ." Gửi `text/plain` thì thân được đọc như chuỗi và trả 400 do schema (`must be object`). | Không có. |
 | 413 | `VALIDATION_ERROR` | Thân vượt giới hạn của Express (mặc định 100 KB). `message` là "Nội dung gửi lên quá lớn." | Không có. |
 | 404 | `NOT_FOUND` | Đường dẫn không tồn tại. | Không có. |
@@ -134,7 +135,7 @@ Không có tham số. Luôn trả 200 khi tiến trình chạy.
 | `service` | `"viec-that-api"` | |
 | `version` | string | Phiên bản API, hiện `0.1.0`. |
 | `time` | string | Giờ máy chủ, ISO 8601 UTC. |
-| `modes` | `("simulated" \| "live")[]` | Chế độ máy chủ nhận. |
+| `modes` | `("simulated" \| "live")[]` | Chế độ máy chủ nhận. `["live"]` khi máy chủ đặt `DEMO_CASES_ENABLED=false`. |
 | `history` | `{ enabled, ttlDays }` | `enabled = false` khi chưa đặt `DATABASE_URL`. Web ẩn mục Lịch sử. |
 | `capabilities` | `{ ai, places }` | Dịch vụ ngoài đã cấu hình. `false` thì chế độ `live` hạ cấp phần đó. |
 

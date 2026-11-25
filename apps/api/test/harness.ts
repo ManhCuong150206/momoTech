@@ -7,6 +7,7 @@ import { AppModule } from '../src/app.module.js';
 import { GeocodingService } from '../src/geocoding/geocoding.service.js';
 import type { AiExtractor } from '../src/viec-that/ai.js';
 import { AiService } from '../src/viec-that/ai.service.js';
+import { DemoService } from '../src/viec-that/demo.service.js';
 import type { Db } from '../src/viec-that/db.js';
 import { HistoryService } from '../src/viec-that/history.service.js';
 import { InvitationRateGuard } from '../src/viec-that/invitation-rate.guard.js';
@@ -30,6 +31,8 @@ export interface HarnessOptions {
   places?: PlaceFinder;
   /** Giới hạn yêu cầu mỗi phút mỗi IP. Mặc định 0 (tắt) để test không bị 429. */
   rateLimitPerMinute?: number;
+  /** false: tắt ca mẫu như bản chạy thực tế (DEMO_CASES_ENABLED=false). Mặc định bật. */
+  demoCasesEnabled?: boolean;
 }
 
 export interface InjectOptions {
@@ -79,6 +82,8 @@ export function buildApp(opts: HarnessOptions = {}): TestApp {
         })
         .overrideProvider(AiService)
         .useValue({ extractor: opts.ai })
+        .overrideProvider(DemoService)
+        .useValue({ enabled: opts.demoCasesEnabled ?? true })
         .overrideProvider(GeocodingService)
         .useValue(
           opts.places ?? { configured: false, findPlace: async () => null },

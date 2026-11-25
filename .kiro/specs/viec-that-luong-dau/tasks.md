@@ -27,7 +27,7 @@
 - [x] 18. Câu hỏi và bước tiếp theo theo dữ kiện thiếu, yêu cầu giấy tờ cá nhân (VT10)
 - [x] 19. Web: tự chọn chế độ, ô nhập dữ kiện tin, thông báo gửi AI, nhãn mới (VT11)
 - [x] 20. Hạ cấp có thông báo khi thiếu dịch vụ, giới hạn tần suất, giới hạn lịch sử
-- [ ] 21. Gọi Bedrock thật và Places thật rồi chạy ``npm run check:services`` (cần VT02, VT03)
+- [ ] 21. Gọi Bedrock thật và Vietmap thật rồi chạy `npm run check:services` (cần VT02, VT03)
 - [ ] 22. Thử lời mời mới bằng AI thật trên iPhone (VT11, VT15)
 
 ## Rà soát sau VT03 (22/11/2026)
@@ -61,3 +61,9 @@
 - [x] 43. Chuẩn hóa URL trước khi so ca mẫu
 - [x] 44. 405 `METHOD_NOT_ALLOWED` kèm `Allow`, 413 có thông báo riêng
 - [x] 45. Quy ước ổn định hợp đồng, web hiện "Chưa rõ" cho enum lạ
+
+## Hoàn thiện (25/11/2026)
+
+- [x] 46. `DEMO_CASES_ENABLED`: tắt ca mẫu và chế độ mô phỏng trên bản chạy thực tế
+- [x] 47. Desktop: đầu trang và nội dung chung một lề trái, chỉ bước kết quả rộng ra
+- [x] 48. Sửa tài liệu còn ghi theo bản Fastify

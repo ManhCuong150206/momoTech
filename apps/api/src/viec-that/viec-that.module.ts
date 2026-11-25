@@ -4,6 +4,7 @@ import { APP_FILTER } from '@nestjs/core';
 import { GeocodingModule } from '../geocoding/geocoding.module.js';
 import { AiService } from './ai.service.js';
 import { ApiErrorFilter } from './api-errors.js';
+import { DemoService } from './demo.service.js';
 import { HistoryService } from './history.service.js';
 import { InvitationRateGuard } from './invitation-rate.guard.js';
 import { ViecThatController } from './viec-that.controller.js';
@@ -13,6 +14,7 @@ import { ViecThatController } from './viec-that.controller.js';
   controllers: [ViecThatController],
   providers: [
     AiService,
+    DemoService,
     HistoryService,
     InvitationRateGuard,
     { provide: APP_FILTER, useClass: ApiErrorFilter },

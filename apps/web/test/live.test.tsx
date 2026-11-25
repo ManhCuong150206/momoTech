@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../src/App';
 import { buildApp } from '../../api/test/harness';
@@ -223,5 +223,26 @@ describe('quyết định ở mục 7 của hợp đồng API', () => {
     await user.click(within(form).getByRole('button', { name: 'Đối chiếu' }));
     const inv = await screen.findByRole('article', { name: 'Lời mời' });
     expect(within(inv).getByText('Cần thận trọng')).toBeTruthy();
+  });
+});
+
+describe('bản chạy thực tế tắt ca mẫu', () => {
+  it('không hiện nút "Thử với dữ liệu mẫu", vẫn phân tích được lời mời', async () => {
+    await stubApi(buildApp({ ai, demoCasesEnabled: false }));
+    // Đếm lần gọi API đã trả lời, để chắc danh sách ca mẫu và healthz đã tải xong.
+    const apiFetch = globalThis.fetch;
+    let answered = 0;
+    vi.stubGlobal('fetch', async (...args: Parameters<typeof fetch>) => {
+      const res = await apiFetch(...args);
+      answered++;
+      return res;
+    });
+    const user = userEvent.setup();
+    render(<App />);
+    await waitFor(() => expect(answered).toBeGreaterThanOrEqual(2));
+    expect(screen.queryByRole('button', { name: 'Thử với dữ liệu mẫu' })).toBeNull();
+    await user.type(screen.getByLabelText('Nội dung lời mời'), TEXT);
+    await user.click(screen.getByRole('button', { name: 'Phân tích lời mời' }));
+    expect(await screen.findByRole('form', { name: 'Xác nhận dữ kiện' })).toBeTruthy();
   });
 });

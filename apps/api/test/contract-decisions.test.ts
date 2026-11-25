@@ -134,3 +134,33 @@ describe('6. sai phương thức trả 405, thân quá lớn trả 413', () => {
     expect(res.json().error).toEqual({ code: 'VALIDATION_ERROR', message: 'Nội dung gửi lên quá lớn.' });
   });
 });
+
+describe('DEMO_CASES_ENABLED=false: bản chạy thực tế không có ca mẫu', () => {
+  const prod = buildApp({ demoCasesEnabled: false });
+  afterAll(() => prod.close());
+
+  it('healthz chỉ báo chế độ live, danh sách ca mẫu rỗng', async () => {
+    expect((await prod.inject({ url: '/healthz' })).json().modes).toEqual(['live']);
+    expect((await prod.inject({ url: '/api/v1/demo/cases' })).json()).toEqual({ cases: [] });
+  });
+
+  it('yêu cầu simulated bị từ chối bằng 400, live vẫn chạy', async () => {
+    const c = demoData.cases[0]!;
+    for (const url of ['/api/v1/invitations/extract', '/api/v1/invitations/verify']) {
+      const payload =
+        url.endsWith('extract')
+          ? { mode: 'simulated', ...c.input }
+          : { mode: 'simulated', invitationText: c.input.invitationText, confirmed: { company: null, role: null, meetingAddress: null, requirements: [] } };
+      const res = await prod.inject({ method: 'POST', url, payload });
+      expect(res.statusCode, url).toBe(400);
+      expect(res.json().error).toMatchObject({ code: 'VALIDATION_ERROR', message: expect.stringContaining('Chế độ mô phỏng đã tắt') });
+    }
+    const live = await prod.inject({ method: 'POST', url: '/api/v1/invitations/extract', payload: { mode: 'live', invitationText: c.input.invitationText } });
+    expect(live.statusCode).toBe(200);
+  });
+
+  it('mặc định (không đặt biến) vẫn bật ca mẫu', async () => {
+    expect((await app.inject({ url: '/healthz' })).json().modes).toEqual(['simulated', 'live']);
+    expect((await app.inject({ url: '/api/v1/demo/cases' })).json().cases).toHaveLength(4);
+  });
+});

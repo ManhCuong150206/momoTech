@@ -242,8 +242,8 @@ export default function App() {
   }
 
   return (
-    <main className="app">
-      <header className="narrow">
+    <main className={`app ${view === 'check' && step === 'result' && result ? 'app-wide' : ''}`}>
+      <header>
         <h1>Việc Thật</h1>
         <p className="lead">Đối chiếu lời mời việc làm trước khi đi phỏng vấn, gửi giấy tờ hoặc chuyển tiền.</p>
         {historyOn && (
@@ -259,19 +259,19 @@ export default function App() {
       </header>
 
       {view === 'history' && historyOn && health && (
-        <div className="wide">
+        <div>
           <History ttlDays={health.ttlDays} />
         </div>
       )}
 
       {view === 'check' && error && (
-        <div className="alert narrow" role="alert">
+        <div className="alert" role="alert">
           {error}
         </div>
       )}
 
       {view === 'check' && step === 'input' && (
-        <form onSubmit={onExtract} className="card narrow" aria-label="Nhập lời mời" noValidate>
+        <form onSubmit={onExtract} className="card" aria-label="Nhập lời mời" noValidate>
           <h2 ref={stepHeading} tabIndex={-1}>
             1. Nhập lời mời
           </h2>
@@ -403,7 +403,7 @@ export default function App() {
       )}
 
       {view === 'check' && step === 'confirm' && confirm && extract && (
-        <form onSubmit={onVerify} className="card narrow" aria-label="Xác nhận dữ kiện">
+        <form onSubmit={onVerify} className="card" aria-label="Xác nhận dữ kiện">
           <h2 ref={stepHeading} tabIndex={-1}>
             2. Xem lại và sửa dữ kiện
           </h2>
@@ -478,7 +478,7 @@ export default function App() {
       )}
 
       {view === 'check' && step === 'result' && result && (
-        <div className="wide">
+        <div>
           <h2 ref={stepHeading} tabIndex={-1}>
             3. Kết quả
           </h2>

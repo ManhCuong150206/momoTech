@@ -37,6 +37,7 @@ import { GeocodingService } from '../geocoding/geocoding.service.js';
 import { API_VERSION } from '../version.js';
 import { AiService } from './ai.service.js';
 import { ApiError, historyDisabled } from './api-errors.js';
+import { DemoService } from './demo.service.js';
 import { demoData } from './demo-data.js';
 import { extractLive, extractSimulated } from './extract.js';
 import {
@@ -101,7 +102,17 @@ export class ViecThatController {
     @Inject(GeocodingService) private readonly geocoding: GeocodingService,
     @Inject(HistoryService) private readonly history: HistoryService,
     @Inject(AiService) private readonly ai: AiService,
+    @Inject(DemoService) private readonly demo: DemoService,
   ) {}
+
+  /** Chế độ mô phỏng đã tắt thì từ chối yêu cầu simulated bằng 400, cùng dạng lỗi kiểm tra đầu vào. */
+  private assertModeAllowed(mode: string): void {
+    if (mode === 'simulated' && !this.demo.enabled) {
+      throw new ApiError(400, 'VALIDATION_ERROR', 'Chế độ mô phỏng đã tắt trên máy chủ này. Dùng mode "live".', [
+        { instancePath: '/mode', keyword: 'enum', params: { allowedValues: ['live'] }, message: 'must be equal to one of the allowed values' },
+      ]);
+    }
+  }
 
   @Get('healthz')
   @Header('Cache-Control', 'no-store')
@@ -111,7 +122,7 @@ export class ViecThatController {
       service: 'viec-that-api',
       version: API_VERSION,
       time: new Date().toISOString(),
-      modes: ['simulated', 'live'],
+      modes: this.demo.enabled ? ['simulated', 'live'] : ['live'],
       history: { enabled: !!this.history.db, ttlDays: this.history.ttlDays },
       capabilities: {
         ai: !!this.ai.extractor,
@@ -122,6 +133,7 @@ export class ViecThatController {
 
   @Get('api/v1/demo/cases')
   cases(): { cases: DemoCaseSummary[] } {
+    if (!this.demo.enabled) return { cases: [] };
     return {
       cases: demoData.cases.map(({ id, title, kind, input }) => ({
         id,
@@ -138,6 +150,7 @@ export class ViecThatController {
   @UseGuards(InvitationRateGuard)
   async extract(@Body() body: unknown): Promise<ExtractResponse> {
     const input = validated(validateExtract, body);
+    this.assertModeAllowed(input.mode);
     return input.mode === 'simulated'
       ? extractSimulated(input, demoData)
       : extractLive(input, this.ai.extractor);
@@ -153,6 +166,7 @@ export class ViecThatController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<VerifyResponse> {
     const input = validated(validateVerify, body);
+    this.assertModeAllowed(input.mode);
     const db = this.history.db;
     if (input.save && !db) throw historyDisabled();
 

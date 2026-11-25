@@ -4,6 +4,8 @@ process.env.DATABASE_URL = '';
 process.env.VIETMAP_API_KEY = '';
 process.env.BEDROCK_MODEL_ID = '';
 process.env.RATE_LIMIT_PER_MINUTE = '0';
+// k6 chạy bốn ca mẫu nên luôn bật chế độ mô phỏng.
+process.env.DEMO_CASES_ENABLED = 'true';
 
 const { NestFactory } = await import('@nestjs/core');
 const { AppModule } = await import('../app.module.js');

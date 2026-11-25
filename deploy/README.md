@@ -16,7 +16,7 @@ Caddy phục vụ bản web đã build tại `/var/www/viec-that` và chuyển `
    COOKIE_SECURE=true
    ```
 
-   Khi có quyền Bedrock, đặt `AWS_REGION` và `BEDROCK_MODEL_ID`. Máy EC2 nhận quyền gọi mô hình từ IAM role của đội. Khi có khóa Vietmap, đặt `VIETMAP_API_KEY`. Để trống thì địa điểm chạy chế độ dự phòng. Nút **Mở bản đồ** vẫn dùng được khi có địa chỉ.
+   Khi có quyền Bedrock, đặt `AWS_REGION` và `BEDROCK_MODEL_ID`. Máy EC2 nhận quyền gọi mô hình từ IAM role của đội. Khi có khóa Vietmap, đặt `VIETMAP_API_KEY`. Để trống thì địa điểm chạy chế độ dự phòng. Bản nộp cho giám khảo giữ `DEMO_CASES_ENABLED=true` để có ca mẫu. Bản dùng thực tế sau cuộc thi đặt `DEMO_CASES_ENABLED=false`. Nút **Mở bản đồ** vẫn dùng được khi có địa chỉ.
 
 4. Cài unit systemd và Caddyfile với quyền `0644`. Trong cấu hình bổ sung của dịch vụ Caddy (`sudo systemctl edit caddy`), đặt tên miền thực tế bằng biến `VIECTHAT_SITE`.
 
